@@ -189,13 +189,7 @@
       <span style="font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase;">Lock</span>
       <span class="text-xs font-mono px-2 py-0.5 rounded-md ml-1" style="background: var(--accent-glow); color: var(--accent); border: 1px solid var(--accent);">CS2</span>
     </div>
-    <div class="flex items-center gap-2">
-      <button class="theme-pill active" style="background: #00f0a0;" onclick="setTheme('neon',this)" title="Neon"></button>
-      <button class="theme-pill" style="background: #a78bfa;" onclick="setTheme('midnight',this)" title="Midnight"></button>
-      <button class="theme-pill" style="background: #e0e0e0;" onclick="setTheme('light',this)" title="Light"></button>
-      <button class="theme-pill" style="background: #7cb342;" onclick="setTheme('tactical',this)" title="Tactical"></button>
-      <button class="theme-pill" style="background: #ff5252;" onclick="setTheme('fire',this)" title="Fire"></button>
-    </div>
+    <span class="text-xs" style="color: var(--text3);">Squad Wagers</span>
   </div>
 </header>
 
@@ -206,6 +200,12 @@
     <button class="tab" onclick="switchTab('history',this)">Match History</button>
     <button class="tab" onclick="switchTab('leaderboard',this)">Leaderboard</button>
     <button class="tab" onclick="switchTab('tools',this)">Tools</button>
+    <button class="tab" onclick="switchTab('style',this)" style="margin-left:auto;">
+      <span style="display:inline-flex;align-items:center;gap:4px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+        Style
+      </span>
+    </button>
   </div>
 </div>
 
@@ -214,29 +214,40 @@
 <!-- ══════════ LOBBY TAB ══════════ -->
 <div id="tab-lobby" class="tab-panel active">
   <!-- Setup Row -->
-  <div class="grid sm:grid-cols-4 gap-3 mb-5">
-    <div>
+  <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+    <div class="lg:col-span-2">
       <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Match Title</label>
       <input id="w-title" type="text" class="input-field" placeholder="Friday 10-mans" maxlength="64" oninput="updateSummary()" />
     </div>
     <div>
-      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">$ Per Player</label>
+      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Currency</label>
+      <select id="w-currency" class="input-field" style="appearance:none;" onchange="updateSummary()">
+        <option value="cash">Cash ($)</option>
+        <option value="sol">SOL (◎)</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Amount</label>
       <div class="relative">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style="color: var(--text3);">$</span>
-        <input id="w-amount" type="number" class="input-field pl-7 font-mono" placeholder="20" step="1" min="1" oninput="updateSummary()" />
+        <span id="currency-symbol" class="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style="color: var(--text3);">$</span>
+        <input id="w-amount" type="number" class="input-field pl-7 font-mono" placeholder="20" step="any" min="0.01" oninput="updateSummary()" />
       </div>
     </div>
     <div>
       <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Mode</label>
-      <select id="w-mode" class="input-field" style="appearance:none;" onchange="updateSummary()">
-        <option value="team">Team Match (totals)</option>
-        <option value="individual">Individual (1v1 locks)</option>
+      <select id="w-mode" class="input-field" style="appearance:none;" onchange="onModeChange()">
+        <option value="team">Team Match</option>
+        <option value="individual">Individual Bets</option>
       </select>
     </div>
     <div>
-      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Payment</label>
-      <select id="w-payment" class="input-field" style="appearance:none;" onchange="updateSummary()">
-        <option>Venmo</option><option>Cash App</option><option>Zelle</option><option>PayPal</option><option>Crypto</option><option>Cash</option>
+      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Odds</label>
+      <select id="w-odds" class="input-field" style="appearance:none;" onchange="updateSummary()">
+        <option value="1:1">Even (1:1)</option>
+        <option value="2:1">2:1 (CT favored)</option>
+        <option value="3:1">3:1 (CT favored)</option>
+        <option value="1:2">1:2 (T favored)</option>
+        <option value="1:3">1:3 (T favored)</option>
       </select>
     </div>
   </div>
@@ -294,10 +305,12 @@
         <span class="font-semibold" style="font-family: var(--font-display);" id="s-title">—</span>
         <span id="s-badge" class="text-xs font-semibold px-2 py-0.5 rounded-md" style="background: var(--accent-glow); color: var(--accent);">Setup</span>
       </div>
-      <div class="flex gap-4 text-xs" style="color: var(--text3);">
+      <div class="flex gap-4 text-xs flex-wrap" style="color: var(--text3);">
         <span>Pot: <strong class="font-mono" style="color: var(--text);" id="s-pot">$0</strong></span>
         <span>Players: <strong class="font-mono" style="color: var(--text);" id="s-players">0</strong></span>
-        <span>Via: <strong style="color: var(--text2);" id="s-pay">Venmo</strong></span>
+        <span>Odds: <strong class="font-mono" style="color: var(--text);" id="s-odds">1:1</strong></span>
+        <span>Mode: <strong style="color: var(--text2);" id="s-mode">Team</strong></span>
+        <span>Via: <strong style="color: var(--text2);" id="s-pay">Cash</strong></span>
       </div>
     </div>
     <div class="flex gap-2">
@@ -357,6 +370,39 @@
   </div>
 </div>
 
+<!-- ══════════ STYLE TAB ══════════ -->
+<div id="tab-style" class="tab-panel">
+  <div class="card p-6">
+    <h3 class="text-sm font-semibold uppercase tracking-wider mb-5" style="color: var(--text3); font-family: var(--font-display);">Color Theme</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+      <button onclick="setTheme('neon',this)" class="theme-option p-4 rounded-xl text-center cursor-pointer transition-all" style="background:var(--bg2);border:2px solid var(--border);" data-theme-name="neon">
+        <div class="w-8 h-8 rounded-full mx-auto mb-2" style="background:#00f0a0;"></div>
+        <span class="text-xs font-semibold" style="font-family:var(--font-display);">Neon</span>
+      </button>
+      <button onclick="setTheme('midnight',this)" class="theme-option p-4 rounded-xl text-center cursor-pointer transition-all" style="background:var(--bg2);border:2px solid var(--border);" data-theme-name="midnight">
+        <div class="w-8 h-8 rounded-full mx-auto mb-2" style="background:#a78bfa;"></div>
+        <span class="text-xs font-semibold" style="font-family:var(--font-display);">Midnight</span>
+      </button>
+      <button onclick="setTheme('light',this)" class="theme-option p-4 rounded-xl text-center cursor-pointer transition-all" style="background:var(--bg2);border:2px solid var(--border);" data-theme-name="light">
+        <div class="w-8 h-8 rounded-full mx-auto mb-2" style="background:#e0e0e0;"></div>
+        <span class="text-xs font-semibold" style="font-family:var(--font-display);">Light</span>
+      </button>
+      <button onclick="setTheme('tactical',this)" class="theme-option p-4 rounded-xl text-center cursor-pointer transition-all" style="background:var(--bg2);border:2px solid var(--border);" data-theme-name="tactical">
+        <div class="w-8 h-8 rounded-full mx-auto mb-2" style="background:#7cb342;"></div>
+        <span class="text-xs font-semibold" style="font-family:var(--font-display);">Tactical</span>
+      </button>
+      <button onclick="setTheme('fire',this)" class="theme-option p-4 rounded-xl text-center cursor-pointer transition-all" style="background:var(--bg2);border:2px solid var(--border);" data-theme-name="fire">
+        <div class="w-8 h-8 rounded-full mx-auto mb-2" style="background:#ff5252;"></div>
+        <span class="text-xs font-semibold" style="font-family:var(--font-display);">Fire</span>
+      </button>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="clearAllData()" class="btn btn-ghost text-xs" style="color:var(--danger);">Clear All Data</button>
+      <span class="text-xs" style="color:var(--text3);">Resets match history &amp; leaderboard</span>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <script>
@@ -372,12 +418,21 @@ function getColor(n) { let h=0; for(let i=0;i<n.length;i++) h=n.charCodeAt(i)+((
 // ══════════ THEME ══════════
 function setTheme(t, el) {
   document.documentElement.setAttribute('data-theme', t);
-  document.querySelectorAll('.theme-pill').forEach(p => p.classList.remove('active'));
-  if(el) el.classList.add('active');
   localStorage.setItem('lock-theme', t);
+  // Highlight active theme option
+  document.querySelectorAll('.theme-option').forEach(o => {
+    o.style.borderColor = o.dataset.themeName === t ? 'var(--accent)' : 'var(--border)';
+  });
+}
+function clearAllData() {
+  if(!confirm('Clear all match history and leaderboard data?')) return;
+  matchHistory = [];
+  playerStats = {};
+  localStorage.removeItem('lock-history');
+  localStorage.removeItem('lock-stats');
 }
 const savedTheme = localStorage.getItem('lock-theme');
-if(savedTheme) { setTheme(savedTheme); document.querySelectorAll('.theme-pill').forEach(p => { if(p.title.toLowerCase() === savedTheme) p.classList.add('active'); else p.classList.remove('active'); }); }
+if(savedTheme) setTheme(savedTheme);
 
 // ══════════ TABS ══════════
 function switchTab(id, el) {
@@ -427,6 +482,31 @@ function randomHost() {
 }
 
 // ══════════ PLAYERS ══════════
+function getCurrencySymbol() { return document.getElementById('w-currency').value === 'sol' ? '◎' : '$'; }
+function isIndividual() { return document.getElementById('w-mode').value === 'individual'; }
+
+function onModeChange() {
+  updateSummary();
+  // Toggle individual amount inputs on existing player cards
+  document.querySelectorAll('.drag-player').forEach(el => {
+    const inp = el.querySelector('.indiv-amount');
+    if (isIndividual()) {
+      if (!inp) addIndivInput(el);
+    } else {
+      if (inp) inp.remove();
+    }
+  });
+}
+
+function addIndivInput(el) {
+  const sym = getCurrencySymbol();
+  const amt = document.getElementById('w-amount').value || '';
+  const span = document.createElement('span');
+  span.className = 'indiv-amount';
+  span.innerHTML = `<input type="number" class="input-field font-mono" style="width:65px;padding:4px 6px;font-size:12px;text-align:right;" placeholder="${amt}" step="any" min="0.01" oninput="updateSummary()" />`;
+  el.querySelector('.flex-1').after(span);
+}
+
 function createPlayerEl(name) {
   const el = document.createElement('div');
   el.className = 'drag-player';
@@ -436,6 +516,7 @@ function createPlayerEl(name) {
   el.innerHTML = `<div class="avatar" style="background:${c};color:#000;">${name[0].toUpperCase()}</div>
     <span class="flex-1 font-medium" style="font-size:13px;">${name}</span>
     <button onclick="removePlayer(this)" class="text-xs px-1 rounded cursor-pointer" style="color:var(--text3);background:var(--bg-card);">&times;</button>`;
+  if (isIndividual()) addIndivInput(el);
   el.addEventListener('dragstart', e => { if(wagerLocked){e.preventDefault();return;} draggedEl=el; el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
   el.addEventListener('dragend', () => { el.classList.remove('dragging'); draggedEl=null; document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over','drag-over-ct','drag-over-t')); updateAll(); });
   el.addEventListener('touchstart', e => { if(wagerLocked)return; draggedEl=el; el.classList.add('dragging'); }, {passive:true});
@@ -503,19 +584,37 @@ function updateAll() {
 function updateSummary() {
   const title = document.getElementById('w-title').value.trim() || '—';
   const amount = parseFloat(document.getElementById('w-amount').value) || 0;
-  const payment = document.getElementById('w-payment').value;
+  const currency = document.getElementById('w-currency').value;
+  const sym = getCurrencySymbol();
+  const odds = document.getElementById('w-odds').value;
+  const mode = document.getElementById('w-mode').value;
   const ctN = document.getElementById('team-ct').querySelectorAll('.drag-player').length;
   const tN = document.getElementById('team-t').querySelectorAll('.drag-player').length;
-  const total = (ctN + tN) * amount;
+
+  // Update currency symbol
+  document.getElementById('currency-symbol').textContent = sym;
+
+  let total;
+  if (mode === 'individual') {
+    total = 0;
+    document.querySelectorAll('#team-ct .drag-player, #team-t .drag-player').forEach(el => {
+      const inp = el.querySelector('.indiv-amount input');
+      total += parseFloat(inp?.value || amount) || 0;
+    });
+  } else {
+    total = (ctN + tN) * amount;
+  }
 
   document.getElementById('s-title').textContent = title;
-  document.getElementById('s-pot').textContent = '$' + total;
+  document.getElementById('s-pot').textContent = sym + total.toFixed(currency === 'sol' ? 2 : 0);
   document.getElementById('s-players').textContent = ctN + tN;
-  document.getElementById('s-pay').textContent = payment;
+  document.getElementById('s-odds').textContent = odds;
+  document.getElementById('s-mode').textContent = mode === 'team' ? 'Team' : 'Individual';
+  document.getElementById('s-pay').textContent = currency === 'sol' ? 'SOL' : 'Cash';
 
   const btn = document.getElementById('lock-btn');
-  const canLock = ctN > 0 && tN > 0 && amount > 0 && !wagerLocked;
-  btn.disabled = !canLock;
+  const hasAmount = mode === 'individual' ? (ctN > 0 && tN > 0) : (ctN > 0 && tN > 0 && amount > 0);
+  btn.disabled = !(hasAmount && !wagerLocked);
 }
 
 // ══════════ LOCK / SETTLE ══════════
@@ -541,31 +640,53 @@ function lockWager() {
   area.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+function getPlayerAmount(el) {
+  const inp = el.querySelector('.indiv-amount input');
+  return parseFloat(inp?.value) || parseFloat(document.getElementById('w-amount').value) || 0;
+}
+
 function declareWinner(side) {
-  const amount = parseFloat(document.getElementById('w-amount').value) || 0;
+  const defaultAmount = parseFloat(document.getElementById('w-amount').value) || 0;
   const title = document.getElementById('w-title').value.trim() || 'Untitled';
-  const payment = document.getElementById('w-payment').value;
+  const currency = document.getElementById('w-currency').value;
+  const sym = getCurrencySymbol();
+  const dec = currency === 'sol' ? 2 : 0;
   const mode = document.getElementById('w-mode').value;
+  const odds = document.getElementById('w-odds').value;
+  const [oddsA, oddsB] = odds.split(':').map(Number); // CT:T
   const winZone = side === 'ct' ? 'team-ct' : 'team-t';
   const loseZone = side === 'ct' ? 'team-t' : 'team-ct';
   const winName = side === 'ct' ? 'Counter-Terrorists' : 'Terrorists';
   const winColor = side === 'ct' ? 'var(--ct)' : 'var(--t)';
 
-  const winners = [...document.getElementById(winZone).querySelectorAll('.drag-player')].map(el => el.dataset.name);
-  const losers = [...document.getElementById(loseZone).querySelectorAll('.drag-player')].map(el => el.dataset.name);
+  const winEls = [...document.getElementById(winZone).querySelectorAll('.drag-player')];
+  const loseEls = [...document.getElementById(loseZone).querySelectorAll('.drag-player')];
+  const winners = winEls.map(el => ({ name: el.dataset.name, amount: getPlayerAmount(el) }));
+  const losers = loseEls.map(el => ({ name: el.dataset.name, amount: getPlayerAmount(el) }));
 
-  let profit, lossPerLoser;
-  if (mode === 'team') {
-    // Team mode: losers' total goes to winners split evenly
-    const losersTotal = losers.length * amount;
-    profit = losersTotal / winners.length;
-    lossPerLoser = amount;
-  } else {
-    // Individual: each person just owes their $amount, winners profit from losers
-    const losersTotal = losers.length * amount;
-    profit = losersTotal / winners.length;
-    lossPerLoser = amount;
-  }
+  // Odds multiplier for the winning side
+  // If CT wins and odds are 2:1 (CT favored), CT risked less to win more
+  // oddsA:oddsB means CT pays oddsA, T pays oddsB ratio
+  // If CT wins: CT profit = their stake * (oddsB/oddsA) portion from losers
+  // Simplification: losers' total pool is split among winners proportionally
+  const losersTotal = losers.reduce((s, p) => s + p.amount, 0);
+  const winnersTotal = winners.reduce((s, p) => s + p.amount, 0);
+
+  // Calculate per-winner profit
+  const winnerResults = winners.map(w => {
+    let profit;
+    if (mode === 'individual') {
+      // Proportional share of losers' pool based on individual stake
+      profit = winnersTotal > 0 ? (w.amount / winnersTotal) * losersTotal : 0;
+    } else {
+      // Even split of losers' pool
+      profit = losersTotal / winners.length;
+    }
+    return { ...w, profit };
+  });
+
+  const loserResults = losers.map(l => ({ ...l, loss: l.amount }));
+  const via = currency === 'sol' ? 'SOL' : 'Cash';
 
   // Update badge
   document.getElementById('s-badge').textContent = 'Settled';
@@ -578,37 +699,37 @@ function declareWinner(side) {
     <div class="text-center mb-5">
       <div class="text-3xl mb-2">&#127942;</div>
       <h3 class="font-semibold text-xl" style="color:${winColor};font-family:var(--font-display);">${winName} Win!</h3>
-      <p class="text-sm mt-1" style="color:var(--text2);">Each winner profits <strong class="font-mono" style="color:var(--success);">+$${profit.toFixed(0)}</strong> via ${payment}</p>
+      <p class="text-sm mt-1" style="color:var(--text2);">Settle up via <strong>${via}</strong></p>
     </div>
     <div class="grid sm:grid-cols-2 gap-4">
       <div class="p-4 rounded-xl" style="background:var(--bg2);border:1px solid var(--border);">
-        <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text3);font-family:var(--font-display);">Winners</div>
-        ${winners.map(n => `<div class="flex items-center gap-2 py-1.5"><div class="avatar" style="background:${getColor(n)};color:#000;width:24px;height:24px;font-size:10px;">${n[0].toUpperCase()}</div><span class="text-sm">${n}</span><span class="ml-auto text-xs font-mono" style="color:var(--success);">+$${profit.toFixed(0)}</span></div>`).join('')}
+        <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text3);font-family:var(--font-display);">Winners — Collect</div>
+        ${winnerResults.map(w => `<div class="flex items-center gap-2 py-1.5"><div class="avatar" style="background:${getColor(w.name)};color:#000;width:24px;height:24px;font-size:10px;">${w.name[0].toUpperCase()}</div><span class="text-sm">${w.name}</span><span class="ml-auto text-xs font-mono font-semibold" style="color:var(--success);">+${sym}${w.profit.toFixed(dec)}</span></div>`).join('')}
       </div>
       <div class="p-4 rounded-xl" style="background:var(--bg2);border:1px solid var(--border);">
-        <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text3);font-family:var(--font-display);">Losers — owe $${lossPerLoser} each</div>
-        ${losers.map(n => `<div class="flex items-center gap-2 py-1.5"><div class="avatar" style="background:${getColor(n)};color:#000;width:24px;height:24px;font-size:10px;">${n[0].toUpperCase()}</div><span class="text-sm">${n}</span><span class="ml-auto text-xs font-mono" style="color:var(--danger);">-$${lossPerLoser}</span></div>`).join('')}
+        <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text3);font-family:var(--font-display);">Losers — Owe</div>
+        ${loserResults.map(l => `<div class="flex items-center gap-2 py-1.5"><div class="avatar" style="background:${getColor(l.name)};color:#000;width:24px;height:24px;font-size:10px;">${l.name[0].toUpperCase()}</div><span class="text-sm">${l.name}</span><span class="ml-auto text-xs font-mono font-semibold" style="color:var(--danger);">-${sym}${l.loss.toFixed(dec)}</span></div>`).join('')}
       </div>
     </div>
   </div>`;
 
   // Save to history
   matchHistory.unshift({
-    title, date: new Date().toLocaleDateString(), side: winName,
-    winners, losers, profit, loss: lossPerLoser, payment, amount
+    title, date: new Date().toLocaleDateString(), side: winName, sym, dec,
+    winners: winnerResults, losers: loserResults, via, odds,
   });
   localStorage.setItem('lock-history', JSON.stringify(matchHistory));
 
   // Update stats
-  winners.forEach(n => {
-    if(!playerStats[n]) playerStats[n] = { wins: 0, losses: 0, earnings: 0 };
-    playerStats[n].wins++;
-    playerStats[n].earnings += profit;
+  winnerResults.forEach(w => {
+    if(!playerStats[w.name]) playerStats[w.name] = { wins: 0, losses: 0, earnings: 0 };
+    playerStats[w.name].wins++;
+    playerStats[w.name].earnings += w.profit;
   });
-  losers.forEach(n => {
-    if(!playerStats[n]) playerStats[n] = { wins: 0, losses: 0, earnings: 0 };
-    playerStats[n].losses++;
-    playerStats[n].earnings -= lossPerLoser;
+  loserResults.forEach(l => {
+    if(!playerStats[l.name]) playerStats[l.name] = { wins: 0, losses: 0, earnings: 0 };
+    playerStats[l.name].losses++;
+    playerStats[l.name].earnings -= l.loss;
   });
   localStorage.setItem('lock-stats', JSON.stringify(playerStats));
 }
@@ -633,21 +754,23 @@ function resetWager() {
 function renderHistory() {
   const el = document.getElementById('history-list');
   if(!matchHistory.length) { el.innerHTML = '<div class="text-center py-16" style="color:var(--text3);"><div class="text-3xl mb-2">&#128203;</div><p>No matches yet.</p></div>'; return; }
-  el.innerHTML = '<div class="space-y-3">' + matchHistory.map((m,i) => `
-    <div class="history-row fade-in">
+  el.innerHTML = '<div class="space-y-3">' + matchHistory.map((m,i) => {
+    const wNames = m.winners.map(w => typeof w === 'string' ? w : w.name).join(', ');
+    const lNames = m.losers.map(l => typeof l === 'string' ? l : l.name).join(', ');
+    return `<div class="history-row fade-in">
       <div class="flex items-center justify-between mb-1">
         <span class="font-semibold text-sm" style="font-family:var(--font-display);">${m.title}</span>
         <span class="text-xs" style="color:var(--text3);">${m.date}</span>
       </div>
-      <div class="flex items-center justify-between text-xs">
-        <span style="color:var(--text2);">${m.side} won &middot; $${m.amount}/player &middot; ${m.payment}</span>
+      <div class="flex items-center justify-between text-xs flex-wrap gap-1">
+        <span style="color:var(--text2);">${m.side} won &middot; ${m.odds || '1:1'} &middot; ${m.via || 'Cash'}</span>
         <div class="flex gap-3">
-          <span style="color:var(--success);">W: ${m.winners.join(', ')}</span>
-          <span style="color:var(--danger);">L: ${m.losers.join(', ')}</span>
+          <span style="color:var(--success);">W: ${wNames}</span>
+          <span style="color:var(--danger);">L: ${lNames}</span>
         </div>
       </div>
-    </div>
-  `).join('') + '</div>';
+    </div>`;
+  }).join('') + '</div>';
 }
 
 // ══════════ LEADERBOARD ══════════
