@@ -841,16 +841,26 @@ function declareWinner(side) {
   });
   localStorage.setItem('lock-history', JSON.stringify(matchHistory));
 
-  // Update stats
+  // Update stats (track cash and sol separately)
+  function initStats(name) {
+    if(!playerStats[name]) playerStats[name] = { wins:0, losses:0, cash:0, sol:0 };
+    // Migrate old format
+    if(playerStats[name].earnings !== undefined) {
+      playerStats[name].cash = playerStats[name].earnings || 0;
+      playerStats[name].sol = 0;
+      delete playerStats[name].earnings;
+    }
+  }
+  const curKey = currency === 'sol' ? 'sol' : 'cash';
   winnerResults.forEach(w => {
-    if(!playerStats[w.name]) playerStats[w.name] = { wins: 0, losses: 0, earnings: 0 };
+    initStats(w.name);
     playerStats[w.name].wins++;
-    playerStats[w.name].earnings += w.profit;
+    playerStats[w.name][curKey] += w.profit;
   });
   loserResults.forEach(l => {
-    if(!playerStats[l.name]) playerStats[l.name] = { wins: 0, losses: 0, earnings: 0 };
+    initStats(l.name);
     playerStats[l.name].losses++;
-    playerStats[l.name].earnings -= l.loss;
+    playerStats[l.name][curKey] -= l.loss;
   });
   localStorage.setItem('lock-stats', JSON.stringify(playerStats));
 }
@@ -897,21 +907,41 @@ function renderHistory() {
 // ══════════ LEADERBOARD ══════════
 function renderLeaderboard() {
   const el = document.getElementById('lb-list');
-  const entries = Object.entries(playerStats).sort((a,b) => b[1].earnings - a[1].earnings);
+  const entries = Object.entries(playerStats);
+  // Sort by wins, then by total earnings
+  entries.sort((a,b) => {
+    const aE = (a[1].cash||0) + (a[1].sol||0) + (a[1].earnings||0);
+    const bE = (b[1].cash||0) + (b[1].sol||0) + (b[1].earnings||0);
+    return bE - aE || b[1].wins - a[1].wins;
+  });
   if(!entries.length) { el.innerHTML = '<div class="text-center py-16" style="color:var(--text3);"><div class="text-3xl mb-2">&#127942;</div><p>Play some matches to see stats.</p></div>'; return; }
   el.innerHTML = '<div class="space-y-1">' + entries.map(([name, s], i) => {
     const total = s.wins + s.losses;
     const wr = total > 0 ? Math.round((s.wins / total) * 100) : 0;
     const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-    const earningsColor = s.earnings >= 0 ? 'var(--success)' : 'var(--danger)';
-    const earningsSign = s.earnings >= 0 ? '+' : '';
+    const cashVal = s.cash || s.earnings || 0;
+    const solVal = s.sol || 0;
+    // Build earnings display
+    let earningsHtml = '';
+    if (cashVal !== 0) {
+      const c = cashVal >= 0 ? 'var(--success)' : 'var(--danger)';
+      const sign = cashVal >= 0 ? '+' : '';
+      earningsHtml += `<span class="font-mono font-semibold" style="color:${c};">${sign}$${Math.abs(cashVal).toFixed(0)}</span>`;
+    }
+    if (solVal !== 0) {
+      const c = solVal >= 0 ? 'var(--success)' : 'var(--danger)';
+      const sign = solVal >= 0 ? '+' : '';
+      if (earningsHtml) earningsHtml += '<span style="color:var(--text3);margin:0 2px;">/</span>';
+      earningsHtml += `<span class="font-mono font-semibold" style="color:${c};">${sign}◎${Math.abs(solVal).toFixed(2)}</span>`;
+    }
+    if (!earningsHtml) earningsHtml = '<span class="font-mono" style="color:var(--text3);">—</span>';
     return `<div class="lb-row">
       <span class="text-sm w-8 text-center">${rank}</span>
       <div class="avatar" style="background:${getColor(name)};color:#000;">${name[0].toUpperCase()}</div>
       <span class="font-medium text-sm flex-1">${name}</span>
       <span class="text-xs font-mono px-2 py-1 rounded" style="background:var(--bg2);color:var(--text2);">${s.wins}W - ${s.losses}L</span>
       <span class="text-xs font-mono w-12 text-right" style="color:var(--text2);">${wr}%</span>
-      <span class="text-sm font-mono font-semibold w-16 text-right" style="color:${earningsColor};">${earningsSign}$${Math.abs(s.earnings).toFixed(0)}</span>
+      <span class="text-sm text-right" style="min-width:80px;">${earningsHtml}</span>
     </div>`;
   }).join('') + '</div>';
 }
