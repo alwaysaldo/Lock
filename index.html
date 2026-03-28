@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth" data-theme="emerald">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lock — Private squad wagers with your crew. Create a challenge, pick teams, and settle it.">
+    <title>Lock — Squad Wagers. Locked In.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Sora', 'sans-serif'],
+            body: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    }
+    </script>
+    <style>
+    /* ══════════════════════════════════════════════
+       THEME SYSTEM — CSS Custom Properties
+       ══════════════════════════════════════════════ */
+
+    /* EMERALD — Default */
+    [data-theme="emerald"] {
+      --accent: 160, 95%, 50%;
+      --accent-raw: #00f0a0;
+      --accent-dim: #00c080;
+      --accent-glow: rgba(0, 240, 160, 0.12);
+      --accent-glow-strong: rgba(0, 240, 160, 0.25);
+      --gradient-start: #00f0a0;
+      --gradient-end: #00b8d4;
+    }
+
+    /* OCEAN */
+    [data-theme="ocean"] {
+      --accent: 210, 100%, 60%;
+      --accent-raw: #3b82f6;
+      --accent-dim: #2563eb;
+      --accent-glow: rgba(59, 130, 246, 0.12);
+      --accent-glow-strong: rgba(59, 130, 246, 0.25);
+      --gradient-start: #3b82f6;
+      --gradient-end: #8b5cf6;
+    }
+
+    /* EMBER */
+    [data-theme="ember"] {
+      --accent: 36, 100%, 55%;
+      --accent-raw: #f59e0b;
+      --accent-dim: #d97706;
+      --accent-glow: rgba(245, 158, 11, 0.12);
+      --accent-glow-strong: rgba(245, 158, 11, 0.25);
+      --gradient-start: #f59e0b;
+      --gradient-end: #ef4444;
+    }
+
+    /* DARK / LIGHT MODE */
+    .dark {
+      --bg-primary: #06070a;
+      --bg-secondary: #0c0d12;
+      --bg-card: #10111a;
+      --bg-card-hover: #161824;
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(255,255,255,0.12);
+      --text-primary: #f0f1f5;
+      --text-secondary: #8b8fa3;
+      --text-muted: #4a4e63;
+      --glass-bg: rgba(12, 13, 18, 0.7);
+      --glass-border: rgba(255,255,255,0.08);
+      --grain-opacity: 0.03;
+    }
+
+    html:not(.dark) {
+      --bg-primary: #f8f9fc;
+      --bg-secondary: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f3f4f8;
+      --border: rgba(0,0,0,0.06);
+      --border-hover: rgba(0,0,0,0.12);
+      --text-primary: #0f1019;
+      --text-secondary: #5a5e73;
+      --text-muted: #9a9eb3;
+      --glass-bg: rgba(248, 249, 252, 0.8);
+      --glass-border: rgba(0,0,0,0.06);
+      --grain-opacity: 0.015;
+    }
+
+    /* ══════════════════════════════════════════════
+       BASE STYLES
+       ══════════════════════════════════════════════ */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::selection {
+      background: var(--accent-raw);
+      color: #000;
+    }
+
+    /* Grain Overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: var(--grain-opacity);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 128px 128px;
+    }
+
+    /* Scroll Progress */
+    #scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+      z-index: 10001;
+      width: 0%;
+      transition: none;
+    }
+
+    /* Glass Navbar */
+    #navbar {
+      background: transparent;
+      backdrop-filter: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #navbar.scrolled {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px) saturate(1.5);
+      -webkit-backdrop-filter: blur(20px) saturate(1.5);
+      border-bottom: 1px solid var(--glass-border);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+    }
+
+    /* Accent Color Utilities */
+    .text-accent { color: var(--accent-raw); }
+    .bg-accent { background: var(--accent-raw); }
+    .border-accent { border-color: var(--accent-raw); }
+    .glow-accent { box-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent-glow); }
+    .glow-accent-sm { box-shadow: 0 0 15px var(--accent-glow); }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gradient-border {
+      position: relative;
+    }
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12), 0 0 0 1px var(--border-hover);
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      color: #000;
+      font-weight: 600;
+      padding: 14px 32px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--gradient-end), var(--gradient-start));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--accent-glow-strong), 0 2px 8px var(--accent-glow);
+    }
+    .btn-primary:hover::before { opacity: 1; }
+    .btn-primary span { position: relative; z-index: 1; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      font-weight: 500;
+      padding: 14px 32px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent-raw);
+      background: var(--accent-glow);
+      transform: translateY(-2px);
+    }
+
+    /* Input fields */
+    .input-field {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      width: 100%;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    .input-field:focus {
+      border-color: var(--accent-raw);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .input-field::placeholder { color: var(--text-muted); }
+
+    /* Glow Orbs (hero background) */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    /* Feature Icon */
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent-raw);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-raw);
+      flex-shrink: 0;
+    }
+
+    /* Step connector line */
+    .step-line {
+      position: absolute;
+      left: 23px;
+      top: 48px;
+      bottom: -20px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--accent-raw), transparent);
+    }
+
+    /* Stat counter */
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 2.5rem;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    /* Mobile nav */
+    #mobile-menu {
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #mobile-menu.open {
+      transform: translateX(0);
+    }
+
+    /* Back to top */
+    #back-to-top {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #back-to-top.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    /* FAQ accordion */
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding 0.4s;
+      padding: 0 24px;
+    }
+    .faq-answer.open {
+      max-height: 200px;
+      padding: 0 24px 20px;
+    }
+    .faq-chevron {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .faq-chevron.open {
+      transform: rotate(180deg);
+    }
+
+    /* Theme switcher */
+    .theme-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid var(--border);
+      transition: all 0.3s;
+    }
+    .theme-dot:hover, .theme-dot.active {
+      transform: scale(1.2);
+      border-color: var(--text-primary);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Subtle float animation */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    /* Reveal animations (controlled by GSAP) */
+    .reveal { opacity: 0; transform: translateY(30px); }
+
+    /* Smooth scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+    /* Nav link underline */
+    .nav-link {
+      position: relative;
+      color: var(--text-secondary);
+      transition: color 0.3s;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0%;
+      height: 2px;
+      background: var(--accent-raw);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 1px;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: var(--text-primary);
+    }
+    .nav-link:hover::after, .nav-link.active::after {
+      width: 100%;
+    }
+
+    /* Comparison table */
+    .check-icon { color: var(--accent-raw); }
+    .x-icon { color: var(--text-muted); }
+
+    /* Pulse */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse-glow 2s infinite;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      z-index: 9000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 480px;
+      padding: 32px;
+      position: relative;
+    }
+
+    /* Player slot */
+    .player-slot {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+    .player-slot.empty {
+      border-style: dashed;
+      opacity: 0.5;
+    }
+
+    /* Avatar */
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Sora', sans-serif;
+      flex-shrink: 0;
+    }
+
+    /* CTA shimmer */
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+
+    /* Drag and drop */
+    .drag-player {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      cursor: grab;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .drag-player:hover {
+      border-color: var(--border-hover);
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .drag-player:active, .drag-player.dragging {
+      cursor: grabbing;
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+    .drop-zone {
+      min-height: 200px;
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .drop-zone.drag-over {
+      border-color: var(--accent-raw);
+      background: var(--accent-glow);
+      box-shadow: 0 0 30px var(--accent-glow);
+    }
+    .drop-zone .drag-player {
+      background: var(--bg-secondary);
+    }
+    .drop-zone-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-style: italic;
+      pointer-events: none;
+    }
+    .stake-input {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 8px;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      width: 70px;
+      outline: none;
+      text-align: right;
+      transition: all 0.3s ease;
+    }
+    .stake-input:focus {
+      border-color: var(--accent-raw);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* Locked state */
+    .wager-locked .drag-player { cursor: default; opacity: 0.8; }
+    .wager-locked .drop-zone { border-style: solid; border-color: var(--border); }
+    .wager-locked .stake-input { pointer-events: none; opacity: 0.7; }
+
+    /* Result banner */
+    .result-banner {
+      padding: 20px;
+      border-radius: 16px;
+      text-align: center;
+      animation: fadeScale 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeScale {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    </style>
+</head>
+
+<body>
+    <!-- ═══════════ SCROLL PROGRESS ═══════════ -->
+    <div id="scroll-progress"></div>
+
+    <!-- ═══════════ NAVBAR ═══════════ -->
+    <nav id="navbar" class="fixed top-0 left-0 right-0 z-[10000] px-4 sm:px-6">
+        <div class="max-w-6xl mx-auto flex items-center justify-between h-16 sm:h-20">
+            <!-- Logo -->
+            <a href="#hero" class="flex items-center gap-2.5 group">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-lg gradient-border" style="background: var(--accent-glow);">
+                    <span style="color: var(--accent-raw); font-weight: 800; font-family: 'Sora';">L</span>
+                </div>
+                <span class="font-display font-bold text-lg tracking-wider uppercase" style="color: var(--text-primary);">Lock</span>
+            </a>
+
+            <!-- Desktop Nav -->
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="nav-link text-sm font-medium">Features</a>
+                <a href="#how-it-works" class="nav-link text-sm font-medium">How It Works</a>
+                <a href="#lobby" class="nav-link text-sm font-medium">Lobby</a>
+                <a href="#faq" class="nav-link text-sm font-medium">FAQ</a>
+            </div>
+
+            <!-- Right Side -->
+            <div class="hidden md:flex items-center gap-3">
+                <!-- Dark/Light Toggle -->
+                <button id="theme-toggle" class="w-9 h-9 rounded-lg flex items-center justify-center transition-all hover:scale-110" style="background: var(--bg-card); border: 1px solid var(--border);" title="Toggle dark/light mode">
+                    <svg id="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-secondary);"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg id="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-secondary); display: none;"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                </button>
+                <!-- Sign In / Profile -->
+                <button id="auth-btn" class="btn-primary text-sm" style="padding: 10px 22px;" onclick="openAuthModal()">
+                    <span>Sign In</span>
+                </button>
+            </div>
+
+            <!-- Mobile Hamburger -->
+            <button id="hamburger" class="md:hidden w-9 h-9 flex flex-col items-center justify-center gap-1.5">
+                <span class="block w-5 h-[1.5px] transition-all" style="background: var(--text-primary);"></span>
+                <span class="block w-5 h-[1.5px] transition-all" style="background: var(--text-primary);"></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="fixed inset-0 z-[9999] md:hidden" style="background: var(--bg-primary);">
+        <div class="flex flex-col items-center justify-center h-full gap-8">
+            <a href="#features" class="text-2xl font-display font-semibold mobile-link" onclick="closeMobileMenu()">Features</a>
+            <a href="#how-it-works" class="text-2xl font-display font-semibold mobile-link" onclick="closeMobileMenu()">How It Works</a>
+            <a href="#lobby" class="text-2xl font-display font-semibold mobile-link" onclick="closeMobileMenu()">Lobby</a>
+            <a href="#faq" class="text-2xl font-display font-semibold mobile-link" onclick="closeMobileMenu()">FAQ</a>
+            <button class="btn-primary mt-4" onclick="closeMobileMenu(); openAuthModal();"><span>Sign In</span></button>
+        </div>
+    </div>
+
+    <!-- ═══════════ HERO ═══════════ -->
+    <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden px-4">
+        <!-- Background Orbs -->
+        <div class="orb w-[500px] h-[500px] -top-40 -left-40" style="background: var(--gradient-start);"></div>
+        <div class="orb w-[400px] h-[400px] top-1/2 -right-32" style="background: var(--gradient-end); opacity: 0.1;"></div>
+        <div class="orb w-[300px] h-[300px] bottom-20 left-1/3" style="background: var(--gradient-start); opacity: 0.06;"></div>
+
+        <!-- Grid Pattern -->
+        <div class="absolute inset-0 opacity-[0.03]" style="background-image: linear-gradient(var(--text-muted) 1px, transparent 1px), linear-gradient(90deg, var(--text-muted) 1px, transparent 1px); background-size: 60px 60px;"></div>
+
+        <div class="relative z-10 max-w-4xl mx-auto text-center">
+            <!-- Badge -->
+            <div id="hero-badge" class="reveal inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-medium mb-8 gradient-border" style="background: var(--accent-glow); color: var(--accent-raw);">
+                <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                Private Squad Wagers
+            </div>
+
+            <!-- Headline -->
+            <h1 id="hero-title" class="reveal font-display font-black text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight mb-6">
+                Wager Your<br>
+                <span class="gradient-text">Squad.</span><br>
+                Lock It In.
+            </h1>
+
+            <!-- Subtitle -->
+            <p id="hero-sub" class="reveal text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed" style="color: var(--text-secondary);">
+                Private wagers for your crew — 1v1 or full squad. Create a challenge, invite your team, and settle it fair.
+                <br class="hidden sm:block">No arguments. No IOUs. Just results.
+            </p>
+
+            <!-- CTAs -->
+            <div id="hero-cta" class="reveal flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button class="btn-primary text-base px-10 py-4" onclick="openAuthModal()">
+                    <span class="flex items-center gap-2">
+                        Get Started
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
+                </button>
+                <button class="btn-secondary text-base" onclick="document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'})">
+                    <span>See How It Works</span>
+                </button>
+            </div>
+
+            <!-- Social Proof -->
+            <div id="hero-proof" class="reveal flex items-center justify-center gap-8 sm:gap-12 mt-16">
+                <div class="text-center">
+                    <div class="stat-value gradient-text">Free</div>
+                    <div class="text-xs mt-1 font-medium" style="color: var(--text-muted);">No Fees</div>
+                </div>
+                <div class="w-px h-10" style="background: var(--border);"></div>
+                <div class="text-center">
+                    <div class="stat-value gradient-text">Any $</div>
+                    <div class="text-xs mt-1 font-medium" style="color: var(--text-muted);">Any Payment</div>
+                </div>
+                <div class="w-px h-10" style="background: var(--border);"></div>
+                <div class="text-center">
+                    <div class="stat-value gradient-text">Squad</div>
+                    <div class="text-xs mt-1 font-medium" style="color: var(--text-muted);">Private Groups</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
+            <span class="text-[10px] uppercase tracking-[3px] font-medium" style="color: var(--text-muted);">Scroll</span>
+            <div class="w-5 h-8 rounded-full border flex items-start justify-center p-1" style="border-color: var(--text-muted);">
+                <div class="w-1 h-2 rounded-full bg-accent animate-bounce"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ FEATURES ═══════════ -->
+    <section id="features" class="relative py-24 sm:py-32 px-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16 sm:mb-20">
+                <p class="reveal text-xs font-mono font-semibold uppercase tracking-[4px] mb-4 text-accent">Features</p>
+                <h2 class="reveal font-display font-bold text-3xl sm:text-4xl md:text-5xl tracking-tight mb-5">
+                    Everything you need.<br><span class="gradient-text">Nothing you don't.</span>
+                </h2>
+                <p class="reveal text-base sm:text-lg max-w-xl mx-auto" style="color: var(--text-secondary);">
+                    Built for your squad. No downloads, no sign-ups, no middleman taking a cut.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Feature 1 -->
+                <div class="reveal card p-7 group">
+                    <div class="feature-icon mb-5">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Locked-In Wagers</h3>
+                    <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">Once everyone locks in, the wager is set. No backing out. The platform tracks everything so nobody can ghost.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="reveal card p-7 group">
+                    <div class="feature-icon mb-5">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Any Team Size</h3>
+                    <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">1v1, 2v2, 3v2 with odds, 4v4, 5v5 — whatever the matchup is. Uneven teams with custom odds fully supported.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="reveal card p-7 group">
+                    <div class="feature-icon mb-5">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Stats & Leaderboard</h3>
+                    <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">Win rate, earnings, best teammate combos, win streaks — all tracked automatically across your squad.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="reveal card p-7 group">
+                    <div class="feature-icon mb-5">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Fair Settlement</h3>
+                    <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">Both sides vote on who won. If they agree, instant settlement. If not, the admin settles it. Clean and fair.</p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="reveal card p-7 group">
+                    <div class="feature-icon mb-5">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Flexible Stakes</h3>
+                    <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">$5 or $500 — set any amount. Pay however you want after: Venmo, Cash App, Zelle, crypto, cash. Your call.</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="reveal card p-7 group">
+                    <div class="feature-icon mb-5">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l-4 4l6 6l4-16l-18 7l4 2l2 6l3-4"/></svg>
+                    </div>
+                    <h3 class="font-display font-semibold text-lg mb-2">Invite Links</h3>
+                    <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">Share a link, friends click and join. No accounts needed to view — just sign in when they're ready to lock in.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ HOW IT WORKS ═══════════ -->
+    <section id="how-it-works" class="relative py-24 sm:py-32 px-4" style="background: var(--bg-secondary);">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-16 sm:mb-20">
+                <p class="reveal text-xs font-mono font-semibold uppercase tracking-[4px] mb-4 text-accent">How It Works</p>
+                <h2 class="reveal font-display font-bold text-3xl sm:text-4xl md:text-5xl tracking-tight mb-5">
+                    Four steps.<br><span class="gradient-text">Zero trust needed.</span>
+                </h2>
+            </div>
+
+            <div class="space-y-12 sm:space-y-16">
+                <!-- Step 1 -->
+                <div class="reveal flex gap-6 relative">
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center font-mono font-bold text-sm gradient-border" style="background: var(--accent-glow); color: var(--accent-raw);">01</div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="pt-1">
+                        <h3 class="font-display font-semibold text-xl mb-2">Pick a Username</h3>
+                        <p style="color: var(--text-secondary);" class="text-sm leading-relaxed max-w-lg">Sign in, choose your tag. That's your identity in every lobby. Takes 5 seconds.</p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="reveal flex gap-6 relative">
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center font-mono font-bold text-sm gradient-border" style="background: var(--accent-glow); color: var(--accent-raw);">02</div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="pt-1">
+                        <h3 class="font-display font-semibold text-xl mb-2">Create the Challenge</h3>
+                        <p style="color: var(--text-secondary);" class="text-sm leading-relaxed max-w-lg">Name it, set the stakes, pick team size and odds. Share the invite link with your crew.</p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="reveal flex gap-6 relative">
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center font-mono font-bold text-sm gradient-border" style="background: var(--accent-glow); color: var(--accent-raw);">03</div>
+                        <div class="step-line"></div>
+                    </div>
+                    <div class="pt-1">
+                        <h3 class="font-display font-semibold text-xl mb-2">Everyone Locks In</h3>
+                        <p style="color: var(--text-secondary);" class="text-sm leading-relaxed max-w-lg">Players join the lobby and pick a team. Once everyone clicks "Lock In" — it's on. No backing out.</p>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="reveal flex gap-6 relative">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center font-mono font-bold text-sm gradient-border" style="background: var(--accent-glow); color: var(--accent-raw);">04</div>
+                    </div>
+                    <div class="pt-1">
+                        <h3 class="font-display font-semibold text-xl mb-2">Play, Vote, Settle</h3>
+                        <p style="color: var(--text-secondary);" class="text-sm leading-relaxed max-w-lg">Go play. Come back, both teams vote on who won. If they agree — settled. If not, admin decides. Loser pays up.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ LOBBY ═══════════ -->
+    <section id="lobby" class="relative py-24 sm:py-32 px-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <p class="reveal text-xs font-mono font-semibold uppercase tracking-[4px] mb-4 text-accent">Lobby</p>
+                <h2 class="reveal font-display font-bold text-3xl sm:text-4xl md:text-5xl tracking-tight mb-5">
+                    Set the teams.<br><span class="gradient-text">Lock it in.</span>
+                </h2>
+                <p class="reveal text-base sm:text-lg max-w-xl mx-auto" style="color: var(--text-secondary);">
+                    Add players, drag them to a team, set the dollar amount, and lock the wager.
+                </p>
+            </div>
+
+            <div id="wager-app">
+                <!-- Challenge Setup Row -->
+                <div class="reveal grid sm:grid-cols-3 gap-4 mb-8">
+                    <div>
+                        <label class="block text-xs font-mono font-semibold uppercase tracking-wider mb-2" style="color: var(--text-muted);">Challenge</label>
+                        <input id="wager-title" type="text" class="input-field" placeholder='e.g. Warzone Friday' maxlength="64" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono font-semibold uppercase tracking-wider mb-2" style="color: var(--text-muted);">$ Per Player</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium" style="color: var(--text-muted);">$</span>
+                            <input id="wager-amount" type="number" class="input-field pl-8 font-mono" placeholder="20" step="1" min="1" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-mono font-semibold uppercase tracking-wider mb-2" style="color: var(--text-muted);">Payment</label>
+                        <select id="wager-payment" class="input-field cursor-pointer" style="appearance: none;">
+                            <option>Venmo</option>
+                            <option>Cash App</option>
+                            <option>Zelle</option>
+                            <option>PayPal</option>
+                            <option>Crypto</option>
+                            <option>Cash</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Add Player -->
+                <div class="reveal mb-8">
+                    <label class="block text-xs font-mono font-semibold uppercase tracking-wider mb-2" style="color: var(--text-muted);">Add Players</label>
+                    <div class="flex gap-3">
+                        <input id="add-player-input" type="text" class="input-field flex-1" placeholder="Type a name and press Enter" maxlength="20" onkeydown="if(event.key==='Enter')addPlayer()" />
+                        <button onclick="addPlayer()" class="btn-secondary text-sm" style="padding: 12px 20px; white-space: nowrap;">
+                            <span class="flex items-center gap-1.5">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                                Add
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Player Pool -->
+                <div class="reveal mb-8">
+                    <label class="block text-xs font-mono font-semibold uppercase tracking-wider mb-3" style="color: var(--text-muted);">
+                        Player Pool <span id="pool-count" class="text-accent">(0)</span>
+                    </label>
+                    <div id="player-pool" class="drop-zone" style="min-height: 60px; border-style: solid; flex-direction: row; flex-wrap: wrap; gap: 8px; padding: 12px;">
+                        <div id="pool-empty" class="drop-zone-label w-full">Add players above, then drag them to a team</div>
+                    </div>
+                </div>
+
+                <!-- Teams -->
+                <div class="reveal grid md:grid-cols-2 gap-6 mb-8">
+                    <!-- Team Alpha -->
+                    <div class="card p-6" style="transform: none;">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full" style="background: var(--accent-raw);"></div>
+                                <span class="font-display font-semibold" style="color: var(--accent-raw);">Team Alpha</span>
+                            </div>
+                            <span id="team1-count" class="text-xs font-mono font-bold" style="color: var(--text-muted);">0 players</span>
+                        </div>
+                        <div id="team1" class="drop-zone">
+                            <div class="drop-zone-label" id="team1-empty">Drag players here</div>
+                        </div>
+                    </div>
+
+                    <!-- Team Bravo -->
+                    <div class="card p-6" style="transform: none;">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full" style="background: var(--gradient-end);"></div>
+                                <span class="font-display font-semibold" style="color: var(--gradient-end);">Team Bravo</span>
+                            </div>
+                            <span id="team2-count" class="text-xs font-mono font-bold" style="color: var(--text-muted);">0 players</span>
+                        </div>
+                        <div id="team2" class="drop-zone">
+                            <div class="drop-zone-label" id="team2-empty">Drag players here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wager Summary + Lock Button -->
+                <div class="reveal card p-6" id="wager-summary" style="transform: none;">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="font-display font-semibold text-lg" id="summary-title" style="color: var(--text-primary);">—</span>
+                                <span id="summary-status" class="badge" style="background: var(--accent-glow); color: var(--accent-raw); border: 1px solid var(--accent-raw);">
+                                    <div class="pulse-dot"></div>
+                                    Setting Up
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-6 text-sm">
+                                <span style="color: var(--text-muted);">Pot: <strong class="font-mono gradient-text" id="summary-pot">$0</strong></span>
+                                <span style="color: var(--text-muted);">Players: <strong class="font-mono" style="color: var(--text-primary);" id="summary-players">0</strong></span>
+                                <span style="color: var(--text-muted);">Via: <strong style="color: var(--text-secondary);" id="summary-payment">Venmo</strong></span>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="lock-btn" onclick="lockWager()" class="btn-primary" disabled style="opacity: 0.4; cursor: not-allowed;">
+                                <span class="flex items-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                    Lock It In
+                                </span>
+                            </button>
+                            <button id="reset-btn" onclick="resetWager()" class="btn-secondary text-sm" style="padding: 10px 16px; display: none;">
+                                <span>Reset</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result Section (hidden until settled) -->
+                <div id="result-section" style="display: none;" class="mt-8">
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <button onclick="declareWinner('alpha')" class="card p-6 text-center cursor-pointer group" style="transform: none;" id="vote-alpha">
+                            <div class="font-display font-bold text-lg mb-1" style="color: var(--accent-raw);">Team Alpha Wins</div>
+                            <p class="text-sm" style="color: var(--text-muted);">Click to settle</p>
+                        </button>
+                        <button onclick="declareWinner('bravo')" class="card p-6 text-center cursor-pointer group" style="transform: none;" id="vote-bravo">
+                            <div class="font-display font-bold text-lg mb-1" style="color: var(--gradient-end);">Team Bravo Wins</div>
+                            <p class="text-sm" style="color: var(--text-muted);">Click to settle</p>
+                        </button>
+                    </div>
+                    <div id="winner-banner" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ FAQ ═══════════ -->
+    <section id="faq" class="relative py-24 sm:py-32 px-4" style="background: var(--bg-secondary);">
+        <div class="max-w-3xl mx-auto">
+            <div class="text-center mb-16">
+                <p class="reveal text-xs font-mono font-semibold uppercase tracking-[4px] mb-4 text-accent">FAQ</p>
+                <h2 class="reveal font-display font-bold text-3xl sm:text-4xl tracking-tight">
+                    Got questions?
+                </h2>
+            </div>
+
+            <div class="space-y-3">
+                <div class="reveal card faq-item" style="padding: 0;">
+                    <button class="faq-trigger w-full flex items-center justify-between p-5 sm:p-6 text-left" onclick="toggleFaq(this)">
+                        <span class="font-display font-semibold text-sm sm:text-base pr-4">How does payment work?</span>
+                        <svg class="faq-chevron flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer text-sm leading-relaxed" style="color: var(--text-secondary);">
+                        Lock tracks who owes who. After a wager settles, the losing team sees exactly how much they owe and to whom. You pay however you and your squad agree — Venmo, Cash App, Zelle, cash, crypto. Lock just makes sure there's no dispute about who won and what's owed.
+                    </div>
+                </div>
+
+                <div class="reveal card faq-item" style="padding: 0;">
+                    <button class="faq-trigger w-full flex items-center justify-between p-5 sm:p-6 text-left" onclick="toggleFaq(this)">
+                        <span class="font-display font-semibold text-sm sm:text-base pr-4">What if someone lies about who won?</span>
+                        <svg class="faq-chevron flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer text-sm leading-relaxed" style="color: var(--text-secondary);">
+                        If both teams disagree, the wager goes into "disputed" status. The admin (whoever created the wager) reviews and settles it. Their decision is final.
+                    </div>
+                </div>
+
+                <div class="reveal card faq-item" style="padding: 0;">
+                    <button class="faq-trigger w-full flex items-center justify-between p-5 sm:p-6 text-left" onclick="toggleFaq(this)">
+                        <span class="font-display font-semibold text-sm sm:text-base pr-4">Does Lock cost anything?</span>
+                        <svg class="faq-chevron flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer text-sm leading-relaxed" style="color: var(--text-secondary);">
+                        No. Lock is completely free. No platform fees, no subscriptions, no hidden charges. The entire pot goes to the winner.
+                    </div>
+                </div>
+
+                <div class="reveal card faq-item" style="padding: 0;">
+                    <button class="faq-trigger w-full flex items-center justify-between p-5 sm:p-6 text-left" onclick="toggleFaq(this)">
+                        <span class="font-display font-semibold text-sm sm:text-base pr-4">What if someone doesn't pay?</span>
+                        <svg class="faq-chevron flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer text-sm leading-relaxed" style="color: var(--text-secondary);">
+                        Their profile gets flagged with an unpaid debt visible to everyone in your squad. Lock tracks reputation — if someone's known for not paying, you'll see it before accepting them into a wager.
+                    </div>
+                </div>
+
+                <div class="reveal card faq-item" style="padding: 0;">
+                    <button class="faq-trigger w-full flex items-center justify-between p-5 sm:p-6 text-left" onclick="toggleFaq(this)">
+                        <span class="font-display font-semibold text-sm sm:text-base pr-4">Can I use this for any game?</span>
+                        <svg class="faq-chevron flex-shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="faq-answer text-sm leading-relaxed" style="color: var(--text-secondary);">
+                        Anything — Warzone, Fortnite, Rocket League, 2K, Madden, pickup basketball, beer pong. If two sides can compete, you can wager on it.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ CTA ═══════════ -->
+    <section id="cta" class="relative py-24 sm:py-32 px-4 overflow-hidden">
+        <!-- Orbs -->
+        <div class="orb w-[500px] h-[500px] -bottom-40 -right-40" style="background: var(--gradient-start); opacity: 0.1;"></div>
+        <div class="orb w-[300px] h-[300px] -top-20 -left-20" style="background: var(--gradient-end); opacity: 0.08;"></div>
+
+        <div class="relative z-10 max-w-3xl mx-auto text-center">
+            <div class="reveal">
+                <p class="text-xs font-mono font-semibold uppercase tracking-[4px] mb-6 text-accent">Ready?</p>
+                <h2 class="font-display font-bold text-3xl sm:text-4xl md:text-5xl tracking-tight mb-6">
+                    Stop arguing about money.<br><span class="gradient-text">Start locking it in.</span>
+                </h2>
+                <p class="text-base sm:text-lg mb-10 max-w-xl mx-auto" style="color: var(--text-secondary);">
+                    Pick a username, create your first challenge, and settle it with your squad. Takes less than a minute.
+                </p>
+                <button class="btn-primary text-base px-12 py-4 glow-accent-sm" onclick="openAuthModal()">
+                    <span class="flex items-center gap-2">
+                        Get Started Free
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════ FOOTER ═══════════ -->
+    <footer class="py-12 sm:py-16 px-4" style="border-top: 1px solid var(--border);">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-8">
+                <!-- Logo -->
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center gradient-border" style="background: var(--accent-glow);">
+                        <span style="color: var(--accent-raw); font-weight: 800; font-family: 'Sora'; font-size: 14px;">L</span>
+                    </div>
+                    <span class="font-display font-bold tracking-wider uppercase text-sm" style="color: var(--text-primary);">Lock</span>
+                </div>
+
+                <!-- Links -->
+                <div class="flex items-center gap-6 text-sm" style="color: var(--text-muted);">
+                    <a href="#features" class="hover:text-accent transition-colors">Features</a>
+                    <a href="#how-it-works" class="hover:text-accent transition-colors">How It Works</a>
+                    <a href="#faq" class="hover:text-accent transition-colors">FAQ</a>
+                </div>
+
+                <!-- Theme Switcher -->
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-medium" style="color: var(--text-muted);">Theme:</span>
+                    <button class="theme-dot active" style="background: #00f0a0;" onclick="setTheme('emerald')" title="Emerald"></button>
+                    <button class="theme-dot" style="background: #3b82f6;" onclick="setTheme('ocean')" title="Ocean"></button>
+                    <button class="theme-dot" style="background: #f59e0b;" onclick="setTheme('ember')" title="Ember"></button>
+                </div>
+            </div>
+
+            <div class="mt-10 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4" style="border-top: 1px solid var(--border);">
+                <p class="text-xs" style="color: var(--text-muted);">&copy; 2026 Lock. All rights reserved.</p>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110" style="background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);" title="GitHub">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    </a>
+                    <a href="#" class="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:scale-110" style="background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted);" title="Twitter">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ═══════════ BACK TO TOP ═══════════ -->
+    <button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" class="fixed bottom-6 right-6 w-10 h-10 rounded-xl flex items-center justify-center z-[9998] transition-all hover:scale-110" style="background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+    </button>
+
+    <!-- ═══════════ AUTH MODAL ═══════════ -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer" style="background: var(--bg-secondary); color: var(--text-muted);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+
+            <!-- Step 1: Username -->
+            <div id="auth-step-1">
+                <h3 class="font-display font-bold text-xl mb-1" style="color: var(--text-primary);">Pick a Username</h3>
+                <p class="text-sm mb-6" style="color: var(--text-secondary);">This is how your squad sees you.</p>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Username</label>
+                        <input id="username-input" type="text" class="input-field font-mono" placeholder="e.g. aldo" maxlength="20" oninput="updatePreview()" />
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="p-4 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+                        <div class="flex items-center gap-3">
+                            <div class="avatar" id="preview-avatar" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color: #000;">?</div>
+                            <div>
+                                <div class="text-sm font-display font-semibold" id="preview-name" style="color: var(--text-primary);">your-name</div>
+                                <div class="text-xs" style="color: var(--text-muted);">New player</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="signIn()" class="btn-primary w-full">
+                        <span class="flex items-center justify-center gap-2">
+                            Lock In
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Done -->
+            <div id="auth-step-2" style="display:none;">
+                <div class="text-center py-6">
+                    <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style="background: var(--accent-glow); color: var(--accent-raw);">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                    </div>
+                    <h3 class="font-display font-bold text-xl mb-1" style="color: var(--text-primary);">You're In!</h3>
+                    <p class="text-sm mb-6" style="color: var(--text-secondary);">Welcome to Lock. Time to create your first challenge.</p>
+                    <button onclick="closeAuthModal()" class="btn-primary w-full">
+                        <span>Start Wagering</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         JAVASCRIPT
+         ═══════════════════════════════════════════════ -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // ─── GSAP Reveal Animations ───
+      gsap.registerPlugin(ScrollTrigger);
+
+      gsap.utils.toArray('.reveal').forEach((el, i) => {
+        gsap.fromTo(el,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1, y: 0,
+            duration: 0.8,
+            ease: 'power3.out',
+            delay: i < 5 ? i * 0.12 : 0,
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 88%',
+              once: true,
+            }
+          }
+        );
+      });
+
+      // ─── Scroll Progress Bar ───
+      const progressBar = document.getElementById('scroll-progress');
+      window.addEventListener('scroll', () => {
+        const scrollTop = document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = (scrollTop / scrollHeight) * 100;
+        progressBar.style.width = progress + '%';
+      });
+
+      // ─── Navbar Scroll Effect ───
+      const navbar = document.getElementById('navbar');
+      const backToTop = document.getElementById('back-to-top');
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 60) {
+          navbar.classList.add('scrolled');
+          backToTop.classList.add('visible');
+        } else {
+          navbar.classList.remove('scrolled');
+          backToTop.classList.remove('visible');
+        }
+      });
+
+      // ─── Active Nav Highlighting ───
+      const sections = document.querySelectorAll('section[id]');
+      const navLinks = document.querySelectorAll('.nav-link');
+      window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+          const top = section.offsetTop - 120;
+          if (window.scrollY >= top) current = section.id;
+        });
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + current) {
+            link.classList.add('active');
+          }
+        });
+      });
+
+      // ─── Dark/Light Mode Toggle ───
+      const toggle = document.getElementById('theme-toggle');
+      const moonIcon = document.getElementById('moon-icon');
+      const sunIcon = document.getElementById('sun-icon');
+
+      toggle.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        const isDark = document.documentElement.classList.contains('dark');
+        moonIcon.style.display = isDark ? 'block' : 'none';
+        sunIcon.style.display = isDark ? 'none' : 'block';
+      });
+
+      // ─── Mobile Menu ───
+      const hamburger = document.getElementById('hamburger');
+      const mobileMenu = document.getElementById('mobile-menu');
+      hamburger.addEventListener('click', () => {
+        mobileMenu.classList.toggle('open');
+      });
+
+    });
+
+    // ─── State ───
+    let currentUser = null;
+
+    // ─── Close Mobile Menu ───
+    function closeMobileMenu() {
+      document.getElementById('mobile-menu').classList.remove('open');
+    }
+
+    // ─── FAQ Toggle ───
+    function toggleFaq(trigger) {
+      const answer = trigger.nextElementSibling;
+      const chevron = trigger.querySelector('.faq-chevron');
+      const isOpen = answer.classList.contains('open');
+
+      document.querySelectorAll('.faq-answer').forEach(a => a.classList.remove('open'));
+      document.querySelectorAll('.faq-chevron').forEach(c => c.classList.remove('open'));
+
+      if (!isOpen) {
+        answer.classList.add('open');
+        chevron.classList.add('open');
+      }
+    }
+
+    // ─── Theme Switcher ───
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    // ─── Auth Modal ───
+    function openAuthModal() {
+      if (currentUser) return;
+      document.getElementById('auth-modal').classList.add('open');
+      document.getElementById('auth-step-1').style.display = 'block';
+      document.getElementById('auth-step-2').style.display = 'none';
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.remove('open');
+    }
+
+    function updatePreview() {
+      const val = document.getElementById('username-input').value.trim();
+      document.getElementById('preview-name').textContent = val || 'your-name';
+      document.getElementById('preview-avatar').textContent = val ? val[0].toUpperCase() : '?';
+    }
+
+    function signIn() {
+      const name = document.getElementById('username-input').value.trim();
+      if (!name) {
+        document.getElementById('username-input').style.borderColor = '#ef4444';
+        document.getElementById('username-input').style.boxShadow = '0 0 20px rgba(239,68,68,0.15)';
+        return;
+      }
+      currentUser = name;
+
+      // Update nav button
+      const btn = document.getElementById('auth-btn');
+      btn.innerHTML = `<span class="flex items-center gap-2">
+        <div class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style="background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); color: #000;">${name[0].toUpperCase()}</div>
+        ${name}
+      </span>`;
+      btn.onclick = null;
+      btn.style.cursor = 'default';
+
+      // Show done step
+      document.getElementById('auth-step-1').style.display = 'none';
+      document.getElementById('auth-step-2').style.display = 'block';
+    }
+
+    // ═══════════════════════════════════════
+    // DRAG & DROP WAGER SYSTEM
+    // ═══════════════════════════════════════
+
+    let draggedEl = null;
+    let wagerLocked = false;
+    const colors = ['#00f0a0','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6','#a855f7'];
+
+    function getColor(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return colors[Math.abs(hash) % colors.length];
+    }
+
+    function createPlayerEl(name) {
+      const el = document.createElement('div');
+      el.className = 'drag-player';
+      el.draggable = true;
+      el.dataset.name = name;
+      const c = getColor(name);
+      el.innerHTML = `
+        <div class="avatar" style="background: ${c}; color: #000; width: 32px; height: 32px; font-size: 13px;">${name[0].toUpperCase()}</div>
+        <span class="text-sm font-medium flex-1" style="color: var(--text-primary);">${name}</span>
+        <button onclick="removePlayer(this)" class="text-xs px-1.5 py-0.5 rounded cursor-pointer" style="color: var(--text-muted); background: var(--bg-secondary);">&times;</button>
+      `;
+      el.addEventListener('dragstart', onDragStart);
+      el.addEventListener('dragend', onDragEnd);
+      // Touch support
+      el.addEventListener('touchstart', onTouchStart, {passive: false});
+      el.addEventListener('touchmove', onTouchMove, {passive: false});
+      el.addEventListener('touchend', onTouchEnd);
+      return el;
+    }
+
+    function addPlayer() {
+      if (wagerLocked) return;
+      const input = document.getElementById('add-player-input');
+      const name = input.value.trim();
+      if (!name) return;
+      // Check duplicate
+      if (document.querySelector(`.drag-player[data-name="${name}"]`)) {
+        input.value = '';
+        return;
+      }
+      const pool = document.getElementById('player-pool');
+      const empty = document.getElementById('pool-empty');
+      if (empty) empty.remove();
+      pool.appendChild(createPlayerEl(name));
+      input.value = '';
+      input.focus();
+      updateSummary();
+    }
+
+    function removePlayer(btn) {
+      if (wagerLocked) return;
+      btn.closest('.drag-player').remove();
+      updateEmptyStates();
+      updateSummary();
+    }
+
+    // Drag events
+    function onDragStart(e) {
+      if (wagerLocked) { e.preventDefault(); return; }
+      draggedEl = e.target.closest('.drag-player');
+      draggedEl.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function onDragEnd(e) {
+      if (draggedEl) draggedEl.classList.remove('dragging');
+      draggedEl = null;
+      document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+      updateEmptyStates();
+      updateSummary();
+    }
+
+    // Drop zones
+    document.addEventListener('DOMContentLoaded', () => {
+      ['player-pool', 'team1', 'team2'].forEach(id => {
+        const zone = document.getElementById(id);
+        zone.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          if (draggedEl && !wagerLocked) {
+            zone.appendChild(draggedEl);
+            updateEmptyStates();
+            updateSummary();
+          }
+        });
+      });
+    });
+
+    // Touch drag support
+    let touchClone = null;
+    let touchSource = null;
+
+    function onTouchStart(e) {
+      if (wagerLocked) return;
+      touchSource = e.target.closest('.drag-player');
+      touchSource.classList.add('dragging');
+    }
+
+    function onTouchMove(e) {
+      e.preventDefault();
+      if (!touchSource) return;
+      const touch = e.touches[0];
+      document.querySelectorAll('.drop-zone').forEach(z => {
+        const rect = z.getBoundingClientRect();
+        if (touch.clientX >= rect.left && touch.clientX <= rect.right && touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+          z.classList.add('drag-over');
+        } else {
+          z.classList.remove('drag-over');
+        }
+      });
+    }
+
+    function onTouchEnd(e) {
+      if (!touchSource) return;
+      touchSource.classList.remove('dragging');
+      const touch = e.changedTouches[0];
+      let dropped = false;
+      ['player-pool', 'team1', 'team2'].forEach(id => {
+        const zone = document.getElementById(id);
+        const rect = zone.getBoundingClientRect();
+        if (touch.clientX >= rect.left && touch.clientX <= rect.right && touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+          zone.appendChild(touchSource);
+          dropped = true;
+        }
+        zone.classList.remove('drag-over');
+      });
+      touchSource = null;
+      updateEmptyStates();
+      updateSummary();
+    }
+
+    function updateEmptyStates() {
+      // Pool
+      const pool = document.getElementById('player-pool');
+      let poolEmpty = document.getElementById('pool-empty');
+      const poolPlayers = pool.querySelectorAll('.drag-player');
+      if (poolPlayers.length === 0 && !poolEmpty) {
+        const div = document.createElement('div');
+        div.id = 'pool-empty';
+        div.className = 'drop-zone-label w-full';
+        div.textContent = 'Add players above, then drag them to a team';
+        pool.appendChild(div);
+      } else if (poolPlayers.length > 0 && poolEmpty) {
+        poolEmpty.remove();
+      }
+
+      // Teams
+      ['team1', 'team2'].forEach(id => {
+        const zone = document.getElementById(id);
+        const emptyEl = document.getElementById(id + '-empty');
+        const players = zone.querySelectorAll('.drag-player');
+        if (players.length === 0 && !emptyEl) {
+          const div = document.createElement('div');
+          div.id = id + '-empty';
+          div.className = 'drop-zone-label';
+          div.textContent = 'Drag players here';
+          zone.appendChild(div);
+        } else if (players.length > 0 && emptyEl) {
+          emptyEl.remove();
+        }
+      });
+
+      // Counts
+      document.getElementById('pool-count').textContent = '(' + pool.querySelectorAll('.drag-player').length + ')';
+      document.getElementById('team1-count').textContent = document.getElementById('team1').querySelectorAll('.drag-player').length + ' players';
+      document.getElementById('team2-count').textContent = document.getElementById('team2').querySelectorAll('.drag-player').length + ' players';
+    }
+
+    function updateSummary() {
+      const title = document.getElementById('wager-title').value.trim() || '—';
+      const amount = parseFloat(document.getElementById('wager-amount').value) || 0;
+      const payment = document.getElementById('wager-payment').value;
+      const t1 = document.getElementById('team1').querySelectorAll('.drag-player').length;
+      const t2 = document.getElementById('team2').querySelectorAll('.drag-player').length;
+      const total = (t1 + t2) * amount;
+
+      document.getElementById('summary-title').textContent = title;
+      document.getElementById('summary-pot').textContent = '$' + total;
+      document.getElementById('summary-players').textContent = (t1 + t2);
+      document.getElementById('summary-payment').textContent = payment;
+
+      const lockBtn = document.getElementById('lock-btn');
+      if (t1 > 0 && t2 > 0 && amount > 0 && !wagerLocked) {
+        lockBtn.disabled = false;
+        lockBtn.style.opacity = '1';
+        lockBtn.style.cursor = 'pointer';
+      } else if (!wagerLocked) {
+        lockBtn.disabled = true;
+        lockBtn.style.opacity = '0.4';
+        lockBtn.style.cursor = 'not-allowed';
+      }
+    }
+
+    // Update summary on input change
+    document.addEventListener('DOMContentLoaded', () => {
+      ['wager-title', 'wager-amount', 'wager-payment'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateSummary);
+        document.getElementById(id).addEventListener('change', updateSummary);
+      });
+    });
+
+    function lockWager() {
+      const t1 = document.getElementById('team1').querySelectorAll('.drag-player').length;
+      const t2 = document.getElementById('team2').querySelectorAll('.drag-player').length;
+      if (t1 === 0 || t2 === 0) return;
+
+      wagerLocked = true;
+      document.getElementById('wager-app').classList.add('wager-locked');
+
+      // Update status
+      document.getElementById('summary-status').innerHTML = '<div class="pulse-dot"></div>Locked In';
+      document.getElementById('summary-status').style.background = 'rgba(0,240,160,0.1)';
+      document.getElementById('summary-status').style.borderColor = 'var(--accent-raw)';
+
+      // Disable inputs
+      document.getElementById('wager-title').disabled = true;
+      document.getElementById('wager-amount').disabled = true;
+      document.getElementById('wager-payment').disabled = true;
+      document.getElementById('add-player-input').disabled = true;
+
+      // Update button
+      const lockBtn = document.getElementById('lock-btn');
+      lockBtn.innerHTML = '<span class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg> Locked!</span>';
+      lockBtn.disabled = true;
+      lockBtn.style.opacity = '0.7';
+      lockBtn.style.cursor = 'default';
+
+      // Show reset + result voting
+      document.getElementById('reset-btn').style.display = 'block';
+      document.getElementById('result-section').style.display = 'block';
+
+      // Remove x buttons
+      document.querySelectorAll('.drag-player button').forEach(b => b.style.display = 'none');
+
+      // Scroll to result
+      setTimeout(() => {
+        document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+
+    function declareWinner(team) {
+      const amount = parseFloat(document.getElementById('wager-amount').value) || 0;
+      const winTeamName = team === 'alpha' ? 'Team Alpha' : 'Team Bravo';
+      const loseTeamName = team === 'alpha' ? 'Team Bravo' : 'Team Alpha';
+      const winZone = team === 'alpha' ? 'team1' : 'team2';
+      const loseZone = team === 'alpha' ? 'team2' : 'team1';
+      const winColor = team === 'alpha' ? 'var(--accent-raw)' : 'var(--gradient-end)';
+
+      const winners = [...document.getElementById(winZone).querySelectorAll('.drag-player')].map(el => el.dataset.name);
+      const losers = [...document.getElementById(loseZone).querySelectorAll('.drag-player')].map(el => el.dataset.name);
+      const totalPot = (winners.length + losers.length) * amount;
+      const perWinner = totalPot / winners.length;
+      const payment = document.getElementById('wager-payment').value;
+
+      // Hide voting buttons
+      document.getElementById('vote-alpha').style.display = 'none';
+      document.getElementById('vote-bravo').style.display = 'none';
+
+      // Update status
+      document.getElementById('summary-status').innerHTML = 'Settled';
+      document.getElementById('summary-status').style.background = 'rgba(0,240,160,0.15)';
+
+      // Show winner banner
+      const banner = document.getElementById('winner-banner');
+      banner.style.display = 'block';
+      banner.innerHTML = `
+        <div class="result-banner" style="background: var(--bg-card); border: 1px solid var(--border);">
+          <div class="text-4xl mb-3">&#127942;</div>
+          <h3 class="font-display font-bold text-2xl mb-2" style="color: ${winColor};">${winTeamName} Wins!</h3>
+          <p class="text-sm mb-6" style="color: var(--text-secondary);">Each winner gets <strong class="font-mono" style="color: var(--text-primary);">$${perWinner.toFixed(0)}</strong> via ${payment}</p>
+          <div class="grid sm:grid-cols-2 gap-4 max-w-xl mx-auto text-left">
+            <div class="p-4 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+              <div class="text-xs font-mono uppercase tracking-wider mb-3" style="color: var(--text-muted);">Winners — collect $${perWinner.toFixed(0)} each</div>
+              ${winners.map(n => `<div class="flex items-center gap-2 py-1"><div class="avatar" style="background: ${getColor(n)}; color: #000; width: 24px; height: 24px; font-size: 11px;">${n[0].toUpperCase()}</div><span class="text-sm font-medium">${n}</span><span class="ml-auto text-xs font-mono" style="color: var(--accent-raw);">+$${perWinner.toFixed(0)}</span></div>`).join('')}
+            </div>
+            <div class="p-4 rounded-xl" style="background: var(--bg-secondary); border: 1px solid var(--border);">
+              <div class="text-xs font-mono uppercase tracking-wider mb-3" style="color: var(--text-muted);">Losers — owe $${amount} each</div>
+              ${losers.map(n => `<div class="flex items-center gap-2 py-1"><div class="avatar" style="background: ${getColor(n)}; color: #000; width: 24px; height: 24px; font-size: 11px;">${n[0].toUpperCase()}</div><span class="text-sm font-medium">${n}</span><span class="ml-auto text-xs font-mono" style="color: #ef4444;">-$${amount}</span></div>`).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function resetWager() {
+      wagerLocked = false;
+      document.getElementById('wager-app').classList.remove('wager-locked');
+
+      // Move all players back to pool
+      const pool = document.getElementById('player-pool');
+      document.querySelectorAll('#team1 .drag-player, #team2 .drag-player').forEach(el => pool.appendChild(el));
+
+      // Re-enable inputs
+      document.getElementById('wager-title').disabled = false;
+      document.getElementById('wager-amount').disabled = false;
+      document.getElementById('wager-payment').disabled = false;
+      document.getElementById('add-player-input').disabled = false;
+
+      // Reset buttons
+      const lockBtn = document.getElementById('lock-btn');
+      lockBtn.innerHTML = '<span class="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Lock It In</span>';
+      document.getElementById('reset-btn').style.display = 'none';
+      document.getElementById('result-section').style.display = 'none';
+      document.getElementById('vote-alpha').style.display = 'block';
+      document.getElementById('vote-bravo').style.display = 'block';
+      document.getElementById('winner-banner').style.display = 'none';
+
+      // Re-show remove buttons
+      document.querySelectorAll('.drag-player button').forEach(b => b.style.display = 'block');
+
+      // Status
+      document.getElementById('summary-status').innerHTML = '<div class="pulse-dot"></div>Setting Up';
+
+      updateEmptyStates();
+      updateSummary();
+    }
+    </script>
+</body>
+</html>
