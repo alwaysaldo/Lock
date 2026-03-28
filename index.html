@@ -236,7 +236,8 @@
     <div>
       <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Mode</label>
       <select id="w-mode" class="input-field" style="appearance:none;" onchange="onModeChange()">
-        <option value="team">Team Match</option>
+        <option value="team">Team Pot</option>
+        <option value="matchup">Team + Matchups</option>
         <option value="individual">Individual Bets</option>
       </select>
     </div>
@@ -295,6 +296,24 @@
       <div id="team-t" class="drop-zone" data-team="t">
         <div id="t-empty" class="empty-label">Drag players here</div>
       </div>
+    </div>
+  </div>
+
+  <!-- Matchups Toggle -->
+  <div class="mb-5" id="matchup-section" style="display:none;">
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);"><path d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"/></svg>
+          <span class="text-sm font-semibold" style="font-family:var(--font-display);">Individual Matchups</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="autoMatchup()" class="btn btn-ghost text-xs" style="padding:6px 12px;">Auto Pair</button>
+          <button onclick="shuffleMatchup()" class="btn btn-ghost text-xs" style="padding:6px 12px;">Shuffle</button>
+        </div>
+      </div>
+      <p class="text-xs mb-3" style="color:var(--text3);">Each CT player locks against a T player. Drag to rearrange or set custom amounts per matchup.</p>
+      <div id="matchup-list" class="space-y-2"></div>
     </div>
   </div>
 
@@ -485,17 +504,77 @@ function randomHost() {
 function getCurrencySymbol() { return document.getElementById('w-currency').value === 'sol' ? '◎' : '$'; }
 function isIndividual() { return document.getElementById('w-mode').value === 'individual'; }
 
+function isMatchupMode() { return document.getElementById('w-mode').value === 'matchup'; }
+
 function onModeChange() {
-  updateSummary();
-  // Toggle individual amount inputs on existing player cards
+  const mode = document.getElementById('w-mode').value;
+  // Toggle individual amount inputs
   document.querySelectorAll('.drag-player').forEach(el => {
     const inp = el.querySelector('.indiv-amount');
-    if (isIndividual()) {
+    if (mode === 'individual') {
       if (!inp) addIndivInput(el);
     } else {
       if (inp) inp.remove();
     }
   });
+  // Toggle matchup section
+  document.getElementById('matchup-section').style.display = mode === 'matchup' ? 'block' : 'none';
+  if (mode === 'matchup') renderMatchups();
+  updateSummary();
+}
+
+function renderMatchups() {
+  const ctPlayers = [...document.getElementById('team-ct').querySelectorAll('.drag-player')].map(el => el.dataset.name);
+  const tPlayers = [...document.getElementById('team-t').querySelectorAll('.drag-player')].map(el => el.dataset.name);
+  const list = document.getElementById('matchup-list');
+  const amount = document.getElementById('w-amount').value || '20';
+  const sym = getCurrencySymbol();
+
+  if (ctPlayers.length === 0 || tPlayers.length === 0) {
+    list.innerHTML = '<div class="text-xs text-center py-4" style="color:var(--text3);">Add players to both teams first</div>';
+    return;
+  }
+
+  const pairs = Math.max(ctPlayers.length, tPlayers.length);
+  let html = '';
+  for (let i = 0; i < pairs; i++) {
+    const ct = ctPlayers[i] || '—';
+    const t = tPlayers[i] || '—';
+    const ctColor = ct !== '—' ? getColor(ct) : 'var(--text3)';
+    const tColor = t !== '—' ? getColor(t) : 'var(--text3)';
+    html += `<div class="flex items-center gap-2 p-2 rounded-lg" style="background:var(--bg2);border:1px solid var(--border);" data-matchup="${i}">
+      <div class="flex items-center gap-2 flex-1 min-w-0">
+        <div class="avatar" style="background:${ctColor};color:#000;width:26px;height:26px;font-size:10px;">${ct !== '—' ? ct[0].toUpperCase() : '?'}</div>
+        <span class="text-sm font-medium truncate" style="color:var(--ct);">${ct}</span>
+      </div>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <span class="text-xs" style="color:var(--text3);">${sym}</span>
+        <input type="number" class="input-field font-mono matchup-amount" style="width:60px;padding:4px 6px;font-size:12px;text-align:center;" value="${amount}" step="any" min="0.01" oninput="updateSummary()" />
+      </div>
+      <div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
+        <span class="text-sm font-medium truncate" style="color:var(--t);">${t}</span>
+        <div class="avatar" style="background:${tColor};color:#000;width:26px;height:26px;font-size:10px;">${t !== '—' ? t[0].toUpperCase() : '?'}</div>
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+function autoMatchup() {
+  renderMatchups();
+}
+
+function shuffleMatchup() {
+  // Shuffle T side order then re-render
+  const tZone = document.getElementById('team-t');
+  const tEls = [...tZone.querySelectorAll('.drag-player')];
+  // Fisher-Yates shuffle
+  for (let i = tEls.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    tZone.appendChild(tEls[j]);
+    [tEls[i], tEls[j]] = [tEls[j], tEls[i]];
+  }
+  renderMatchups();
 }
 
 function addIndivInput(el) {
@@ -578,6 +657,7 @@ function updateAll() {
   document.getElementById('ct-count').textContent = ctN;
   document.getElementById('t-count').textContent = tN;
   document.getElementById('pool-count').textContent = '(' + poolN + ')';
+  if (isMatchupMode()) renderMatchups();
   updateSummary();
 }
 
@@ -601,6 +681,11 @@ function updateSummary() {
       const inp = el.querySelector('.indiv-amount input');
       total += parseFloat(inp?.value || amount) || 0;
     });
+  } else if (mode === 'matchup') {
+    total = 0;
+    document.querySelectorAll('.matchup-amount').forEach(inp => {
+      total += (parseFloat(inp.value) || 0) * 2; // both sides put up this amount
+    });
   } else {
     total = (ctN + tN) * amount;
   }
@@ -609,7 +694,7 @@ function updateSummary() {
   document.getElementById('s-pot').textContent = sym + total.toFixed(currency === 'sol' ? 2 : 0);
   document.getElementById('s-players').textContent = ctN + tN;
   document.getElementById('s-odds').textContent = odds;
-  document.getElementById('s-mode').textContent = mode === 'team' ? 'Team' : 'Individual';
+  document.getElementById('s-mode').textContent = mode === 'team' ? 'Team Pot' : mode === 'matchup' ? 'Matchups' : 'Individual';
   document.getElementById('s-pay').textContent = currency === 'sol' ? 'SOL' : 'Cash';
 
   const btn = document.getElementById('lock-btn');
@@ -661,31 +746,47 @@ function declareWinner(side) {
 
   const winEls = [...document.getElementById(winZone).querySelectorAll('.drag-player')];
   const loseEls = [...document.getElementById(loseZone).querySelectorAll('.drag-player')];
-  const winners = winEls.map(el => ({ name: el.dataset.name, amount: getPlayerAmount(el) }));
-  const losers = loseEls.map(el => ({ name: el.dataset.name, amount: getPlayerAmount(el) }));
 
-  // Odds multiplier for the winning side
-  // If CT wins and odds are 2:1 (CT favored), CT risked less to win more
-  // oddsA:oddsB means CT pays oddsA, T pays oddsB ratio
-  // If CT wins: CT profit = their stake * (oddsB/oddsA) portion from losers
-  // Simplification: losers' total pool is split among winners proportionally
-  const losersTotal = losers.reduce((s, p) => s + p.amount, 0);
-  const winnersTotal = winners.reduce((s, p) => s + p.amount, 0);
+  let winnerResults, loserResults;
 
-  // Calculate per-winner profit
-  const winnerResults = winners.map(w => {
-    let profit;
-    if (mode === 'individual') {
-      // Proportional share of losers' pool based on individual stake
-      profit = winnersTotal > 0 ? (w.amount / winnersTotal) * losersTotal : 0;
-    } else {
-      // Even split of losers' pool
-      profit = losersTotal / winners.length;
+  if (mode === 'matchup') {
+    // Matchup mode: each pair settles individually
+    const matchupAmounts = [...document.querySelectorAll('.matchup-amount')].map(inp => parseFloat(inp.value) || 0);
+    const ctPlayers = [...document.getElementById('team-ct').querySelectorAll('.drag-player')].map(el => el.dataset.name);
+    const tPlayers = [...document.getElementById('team-t').querySelectorAll('.drag-player')].map(el => el.dataset.name);
+    const pairs = Math.max(ctPlayers.length, tPlayers.length);
+
+    winnerResults = [];
+    loserResults = [];
+    for (let i = 0; i < pairs; i++) {
+      const amt = matchupAmounts[i] || 0;
+      const ct = ctPlayers[i];
+      const t = tPlayers[i];
+      if (side === 'ct') {
+        if (ct) winnerResults.push({ name: ct, amount: amt, profit: amt, opponent: t || '—' });
+        if (t) loserResults.push({ name: t, amount: amt, loss: amt, opponent: ct || '—' });
+      } else {
+        if (t) winnerResults.push({ name: t, amount: amt, profit: amt, opponent: ct || '—' });
+        if (ct) loserResults.push({ name: ct, amount: amt, loss: amt, opponent: t || '—' });
+      }
     }
-    return { ...w, profit };
-  });
+  } else {
+    const winners = winEls.map(el => ({ name: el.dataset.name, amount: getPlayerAmount(el) }));
+    const losers = loseEls.map(el => ({ name: el.dataset.name, amount: getPlayerAmount(el) }));
+    const losersTotal = losers.reduce((s, p) => s + p.amount, 0);
+    const winnersTotal = winners.reduce((s, p) => s + p.amount, 0);
 
-  const loserResults = losers.map(l => ({ ...l, loss: l.amount }));
+    winnerResults = winners.map(w => {
+      let profit;
+      if (mode === 'individual') {
+        profit = winnersTotal > 0 ? (w.amount / winnersTotal) * losersTotal : 0;
+      } else {
+        profit = losersTotal / winners.length;
+      }
+      return { ...w, profit };
+    });
+    loserResults = losers.map(l => ({ ...l, loss: l.amount }));
+  }
   const via = currency === 'sol' ? 'SOL' : 'Cash';
 
   // Update badge
@@ -701,6 +802,26 @@ function declareWinner(side) {
       <h3 class="font-semibold text-xl" style="color:${winColor};font-family:var(--font-display);">${winName} Win!</h3>
       <p class="text-sm mt-1" style="color:var(--text2);">Settle up via <strong>${via}</strong></p>
     </div>
+    ${mode === 'matchup' ? `
+    <div class="space-y-2">
+      <div class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--text3);font-family:var(--font-display);">Matchup Results</div>
+      ${winnerResults.map((w, i) => {
+        const l = loserResults[i];
+        return `<div class="flex items-center gap-2 p-3 rounded-lg" style="background:var(--bg2);border:1px solid var(--border);">
+          <div class="flex items-center gap-2 flex-1">
+            <div class="avatar" style="background:${getColor(w.name)};color:#000;width:26px;height:26px;font-size:10px;">${w.name[0].toUpperCase()}</div>
+            <span class="text-sm font-medium" style="color:var(--success);">${w.name}</span>
+            <span class="text-xs font-mono font-semibold" style="color:var(--success);">+${sym}${w.profit.toFixed(dec)}</span>
+          </div>
+          <span class="text-xs" style="color:var(--text3);">vs</span>
+          <div class="flex items-center gap-2 flex-1 justify-end">
+            <span class="text-xs font-mono font-semibold" style="color:var(--danger);">-${sym}${(l?.loss||0).toFixed(dec)}</span>
+            <span class="text-sm font-medium" style="color:var(--danger);">${l?.name||'—'}</span>
+            <div class="avatar" style="background:${l?getColor(l.name):'var(--text3)'};color:#000;width:26px;height:26px;font-size:10px;">${l?l.name[0].toUpperCase():'?'}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : `
     <div class="grid sm:grid-cols-2 gap-4">
       <div class="p-4 rounded-xl" style="background:var(--bg2);border:1px solid var(--border);">
         <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text3);font-family:var(--font-display);">Winners — Collect</div>
@@ -710,7 +831,7 @@ function declareWinner(side) {
         <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text3);font-family:var(--font-display);">Losers — Owe</div>
         ${loserResults.map(l => `<div class="flex items-center gap-2 py-1.5"><div class="avatar" style="background:${getColor(l.name)};color:#000;width:24px;height:24px;font-size:10px;">${l.name[0].toUpperCase()}</div><span class="text-sm">${l.name}</span><span class="ml-auto text-xs font-mono font-semibold" style="color:var(--danger);">-${sym}${l.loss.toFixed(dec)}</span></div>`).join('')}
       </div>
-    </div>
+    </div>`}
   </div>`;
 
   // Save to history
