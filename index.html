@@ -263,6 +263,10 @@
   <div class="mb-5">
     <div class="flex items-center justify-between mb-2">
       <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text3); font-family: var(--font-display);">Player Pool <span id="pool-count" style="color:var(--accent);">(0)</span></span>
+      <button onclick="randomTeams()" class="btn btn-ghost text-xs" style="padding:5px 12px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--accent);"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+        Randomize Teams
+      </button>
     </div>
     <div id="player-pool" class="drop-zone" style="min-height:50px; border-style:solid; flex-direction:row; flex-wrap:wrap;">
       <div id="pool-empty" class="empty-label w-full">Type names above to add players</div>
