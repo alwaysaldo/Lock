@@ -386,6 +386,13 @@
       <button onclick="randomHost()" class="btn btn-accent w-full">Pick Random Host</button>
       <div id="host-result" class="text-center mt-4 font-semibold text-lg fade-in" style="color: var(--accent); font-family: var(--font-display); display:none;"></div>
     </div>
+
+    <!-- Random Teams -->
+    <div class="card p-5 sm:col-span-2">
+      <h3 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: var(--text3); font-family: var(--font-display);">Random Teams</h3>
+      <p class="text-sm mb-4" style="color: var(--text2);">Shuffles all players from the pool and both teams into random CT/T sides. Even split — if odd number, one team gets the extra.</p>
+      <button onclick="randomTeams()" class="btn btn-accent w-full">Randomize Teams</button>
+    </div>
   </div>
 </div>
 
@@ -489,6 +496,27 @@ function randomMap() {
 function clearMapSelection() {
   document.querySelectorAll('.map-card').forEach(c => { c.classList.remove('selected'); c.style.borderColor = ''; });
   document.getElementById('map-result').style.display = 'none';
+}
+
+function randomTeams() {
+  if (wagerLocked) return;
+  // Gather all players from pool + both teams
+  const allPlayers = [...document.querySelectorAll('#player-pool .drag-player, #team-ct .drag-player, #team-t .drag-player')];
+  if (allPlayers.length < 2) { alert('Need at least 2 players'); return; }
+  // Fisher-Yates shuffle
+  for (let i = allPlayers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allPlayers[i], allPlayers[j]] = [allPlayers[j], allPlayers[i]];
+  }
+  // Split evenly — first half CT, second half T
+  const half = Math.ceil(allPlayers.length / 2);
+  const ct = document.getElementById('team-ct');
+  const t = document.getElementById('team-t');
+  allPlayers.forEach((el, i) => {
+    if (i < half) ct.appendChild(el);
+    else t.appendChild(el);
+  });
+  updateAll();
 }
 
 function randomHost() {
