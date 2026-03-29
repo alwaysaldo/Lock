@@ -76,125 +76,253 @@
       color: var(--text);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       min-height: 100vh;
+      line-height: 1.5;
     }
     ::selection { background: var(--accent); color: #000; }
 
-    /* Noise */
+    /* Noise texture */
     body::before {
-      content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.02;
+      content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.018;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; }
+    /* Ambient glow behind main content */
+    body::after {
+      content: ''; position: fixed; top: -30%; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px; border-radius: 50%;
+      background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none; z-index: -1; opacity: 0.4;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+    }
+
+    /* Inputs */
     .input-field {
       background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
-      padding: 10px 14px; color: var(--text); font-family: inherit; font-size: 14px;
-      width: 100%; outline: none; transition: all 0.3s ease;
+      padding: 11px 14px; color: var(--text); font-family: inherit; font-size: 14px;
+      width: 100%; outline: none;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
-    .input-field:focus { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
+    .input-field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow), 0 0 20px var(--accent-glow);
+    }
     .input-field::placeholder { color: var(--text3); }
 
+    /* Buttons */
     .btn {
       font-family: var(--font-display); font-weight: 600; font-size: 14px;
       padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.16,1,0.3,1); display: inline-flex;
-      align-items: center; gap: 6px;
+      transition: all 0.3s cubic-bezier(0.16,1,0.3,1); display: inline-flex;
+      align-items: center; gap: 6px; letter-spacing: 0.01em;
+      position: relative; overflow: hidden;
     }
+    .btn::after {
+      content: ''; position: absolute; inset: 0; opacity: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      transition: opacity 0.3s;
+    }
+    .btn:hover::after { opacity: 1; }
     .btn-accent { background: var(--accent); color: #000; }
-    .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
+    .btn-accent:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--accent-glow), 0 0 60px var(--accent-glow);
+    }
+    .btn-accent:active { transform: translateY(0); }
     .btn-accent:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
-    .btn-ghost { background: var(--bg-card); color: var(--text2); border: 1px solid var(--border); }
-    .btn-ghost:hover { border-color: var(--border-hover); color: var(--text); }
+    .btn-accent:disabled::after { display: none; }
+    .btn-ghost {
+      background: var(--bg-card); color: var(--text2); border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+    .btn-ghost:hover {
+      border-color: var(--border-hover); color: var(--text);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
     .btn-ct { background: var(--ct); color: #000; }
-    .btn-ct:hover { box-shadow: 0 4px 15px var(--ct-glow); }
+    .btn-ct:hover { box-shadow: 0 6px 20px var(--ct-glow), 0 0 40px var(--ct-glow); }
     .btn-t { background: var(--t); color: #000; }
-    .btn-t:hover { box-shadow: 0 4px 15px var(--t-glow); }
+    .btn-t:hover { box-shadow: 0 6px 20px var(--t-glow), 0 0 40px var(--t-glow); }
 
     /* Drag & Drop */
     .drag-player {
-      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      display: flex; align-items: center; gap: 8px; padding: 9px 14px;
       border-radius: 10px; background: var(--bg2); border: 1px solid var(--border);
-      cursor: grab; transition: all 0.2s ease; user-select: none; font-size: 14px;
+      cursor: grab; user-select: none; font-size: 14px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(4px);
     }
-    .drag-player:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
-    .drag-player:active, .drag-player.dragging { cursor: grabbing; opacity: 0.4; transform: scale(0.95); }
+    .drag-player:hover {
+      border-color: var(--border-hover); background: var(--bg-card-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .drag-player:active, .drag-player.dragging {
+      cursor: grabbing; opacity: 0.4; transform: scale(0.96);
+    }
     .drop-zone {
-      min-height: 120px; border: 2px dashed var(--border); border-radius: 12px;
-      padding: 8px; display: flex; flex-direction: column; gap: 6px; transition: all 0.3s ease;
+      min-height: 120px; border: 2px dashed var(--border); border-radius: 14px;
+      padding: 10px; display: flex; flex-direction: column; gap: 6px;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-glow); }
-    .drop-zone.drag-over-ct { border-color: var(--ct); background: var(--ct-glow); }
-    .drop-zone.drag-over-t { border-color: var(--t); background: var(--t-glow); }
-    .empty-label { padding: 30px 10px; text-align: center; color: var(--text3); font-size: 13px; pointer-events: none; }
+    .drop-zone.drag-over {
+      border-color: var(--accent); background: var(--accent-glow);
+      box-shadow: inset 0 0 30px var(--accent-glow);
+    }
+    .drop-zone.drag-over-ct {
+      border-color: var(--ct); background: var(--ct-glow);
+      box-shadow: inset 0 0 30px var(--ct-glow);
+    }
+    .drop-zone.drag-over-t {
+      border-color: var(--t); background: var(--t-glow);
+      box-shadow: inset 0 0 30px var(--t-glow);
+    }
+    .empty-label {
+      padding: 30px 10px; text-align: center; color: var(--text3);
+      font-size: 13px; pointer-events: none; letter-spacing: 0.02em;
+    }
 
+    /* Avatars */
     .avatar {
       width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center;
       justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0;
       font-family: var(--font-display);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
     /* Tabs */
-    .tab { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
-      color: var(--text3); transition: all 0.2s; border: 1px solid transparent; font-family: var(--font-display); }
-    .tab:hover { color: var(--text2); }
-    .tab.active { color: var(--text); background: var(--bg-card); border-color: var(--border); }
+    .tab {
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+      color: var(--text3); border: 1px solid transparent; font-family: var(--font-display);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .tab:hover { color: var(--text2); background: var(--bg-card); }
+    .tab.active {
+      color: var(--text); background: var(--bg-card); border-color: var(--border);
+      box-shadow: 0 1px 8px rgba(0,0,0,0.1);
+    }
     .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+    .tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
 
     /* Theme pills */
     .theme-pill {
       width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-      border: 2px solid var(--border); transition: all 0.2s;
+      border: 2px solid var(--border);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .theme-pill:hover, .theme-pill.active { transform: scale(1.15); border-color: var(--text); }
+    .theme-pill:hover, .theme-pill.active {
+      transform: scale(1.2); border-color: var(--text);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
 
     /* Leaderboard */
-    .lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; transition: background 0.2s; }
-    .lb-row:hover { background: var(--bg-card-hover); }
+    .lb-row {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      border-radius: 12px; transition: all 0.25s ease;
+      border: 1px solid transparent;
+    }
+    .lb-row:hover {
+      background: var(--bg-card-hover); border-color: var(--border);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .lb-row:first-child {
+      background: var(--bg-card); border-color: var(--border);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
 
     /* History */
-    .history-row { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg2); }
+    .history-row {
+      padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--bg2); transition: all 0.25s ease;
+    }
+    .history-row:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
 
     /* Map card */
     .map-card {
-      padding: 10px 16px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--border);
-      cursor: pointer; transition: all 0.2s; text-align: center; font-family: var(--font-display); font-weight: 600;
+      padding: 12px 16px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--border);
+      cursor: pointer; text-align: center; font-family: var(--font-display); font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .map-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-    .map-card.selected { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); }
+    .map-card:hover {
+      border-color: var(--border-hover); transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+    .map-card.selected {
+      border-color: var(--accent); background: var(--accent-glow); color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
 
     /* Locked state */
     .wager-locked .drag-player { cursor: default; }
+    .wager-locked .drag-player:hover { transform: none; box-shadow: none; }
     .wager-locked .drop-zone { border-style: solid; }
-    .wager-locked .input-field { pointer-events: none; opacity: 0.6; }
+    .wager-locked .input-field { pointer-events: none; opacity: 0.5; }
 
-    /* Result */
-    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-    .fade-in { animation: fadeIn 0.4s ease; }
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    @keyframes glow-pulse {
+      0%, 100% { box-shadow: 0 0 15px var(--accent-glow); }
+      50% { box-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent-glow); }
+    }
+
+    /* Dividers */
+    .divider {
+      height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 6px 0;
+    }
 
     /* Scrollbar */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--text3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--text3); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+
+    /* Labels */
+    .label {
+      display: block; font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 6px; color: var(--text3);
+      font-family: var(--font-display);
+    }
     </style>
 </head>
 <body>
 
 <!-- ══════════ HEADER ══════════ -->
-<header class="px-4 py-4" style="border-bottom: 1px solid var(--border);">
+<header class="px-4 sm:px-6 py-4" style="border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
   <div class="max-w-5xl mx-auto flex items-center justify-between">
-    <div class="flex items-center gap-2.5">
-      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--accent); color: #000; font-family: var(--font-display); font-weight: 800; font-size: 14px;">L</div>
-      <span style="font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase;">Lock</span>
-      <span class="text-xs font-mono px-2 py-0.5 rounded-md ml-1" style="background: var(--accent-glow); color: var(--accent); border: 1px solid var(--accent);">CS2</span>
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: var(--accent); color: #000; font-family: var(--font-display); font-weight: 800; font-size: 15px; box-shadow: 0 4px 15px var(--accent-glow);">L</div>
+      <div>
+        <span style="font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: 0.08em; text-transform: uppercase;">Lock</span>
+        <span class="text-xs font-mono px-2 py-0.5 rounded-md ml-2" style="background: var(--accent-glow); color: var(--accent); border: 1px solid var(--accent); letter-spacing: 0.05em;">CS2</span>
+      </div>
     </div>
-    <span class="text-xs" style="color: var(--text3);">Squad Wagers</span>
+    <span class="text-xs hidden sm:block" style="color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; font-family: var(--font-display);">Squad Wagers</span>
   </div>
 </header>
 
 <!-- ══════════ TABS ══════════ -->
-<div class="px-4 py-3" style="border-bottom: 1px solid var(--border);">
+<div class="px-4 sm:px-6 py-3 sticky top-[65px] z-50" style="border-bottom: 1px solid var(--border); background: var(--bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
   <div class="max-w-5xl mx-auto flex items-center gap-2 overflow-x-auto">
     <button class="tab active" onclick="switchTab('lobby',this)">Lobby</button>
     <button class="tab" onclick="switchTab('history',this)">Match History</button>
@@ -209,32 +337,32 @@
   </div>
 </div>
 
-<main class="max-w-5xl mx-auto px-4 py-6">
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
 <!-- ══════════ LOBBY TAB ══════════ -->
 <div id="tab-lobby" class="tab-panel active">
   <!-- Setup Row -->
-  <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+  <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
     <div class="lg:col-span-2">
-      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Match Title</label>
+      <label class="label">Match Title</label>
       <input id="w-title" type="text" class="input-field" placeholder="Friday 10-mans" maxlength="64" oninput="updateSummary()" />
     </div>
     <div>
-      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Currency</label>
+      <label class="label">Currency</label>
       <select id="w-currency" class="input-field" style="appearance:none;" onchange="updateSummary()">
         <option value="cash">Cash ($)</option>
         <option value="sol">SOL (◎)</option>
       </select>
     </div>
     <div>
-      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Amount</label>
+      <label class="label">Amount</label>
       <div class="relative">
         <span id="currency-symbol" class="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style="color: var(--text3);">$</span>
         <input id="w-amount" type="number" class="input-field pl-7 font-mono" placeholder="20" step="any" min="0.01" oninput="updateSummary()" />
       </div>
     </div>
     <div>
-      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Mode</label>
+      <label class="label">Mode</label>
       <select id="w-mode" class="input-field" style="appearance:none;" onchange="onModeChange()">
         <option value="team">Team Pot</option>
         <option value="matchup">Team + Matchups</option>
@@ -242,7 +370,7 @@
       </select>
     </div>
     <div>
-      <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: var(--text3); font-family: var(--font-display);">Odds</label>
+      <label class="label">Odds</label>
       <select id="w-odds" class="input-field" style="appearance:none;" onchange="updateSummary()">
         <option value="1:1">Even (1:1)</option>
         <option value="2:1">2:1 (CT favored)</option>
@@ -254,7 +382,7 @@
   </div>
 
   <!-- Add Player -->
-  <div class="flex gap-2 mb-5">
+  <div class="flex gap-2 mb-6">
     <input id="add-input" type="text" class="input-field flex-1" placeholder="Add player name — press Enter" maxlength="20" onkeydown="if(event.key==='Enter')addPlayer()" />
     <button onclick="addPlayer()" class="btn btn-ghost">+ Add</button>
   </div>
@@ -262,7 +390,7 @@
   <!-- Pool -->
   <div class="mb-5">
     <div class="flex items-center justify-between mb-2">
-      <span class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text3); font-family: var(--font-display);">Player Pool <span id="pool-count" style="color:var(--accent);">(0)</span></span>
+      <span class="label" style="margin-bottom:0;">Player Pool <span id="pool-count" style="color:var(--accent);">(0)</span></span>
       <button onclick="randomTeams()" class="btn btn-ghost text-xs" style="padding:5px 12px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--accent);"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
         Randomize Teams
@@ -274,7 +402,7 @@
   </div>
 
   <!-- Teams -->
-  <div class="grid md:grid-cols-2 gap-4 mb-5">
+  <div class="grid md:grid-cols-2 gap-5 mb-6">
     <!-- CT -->
     <div class="card p-4">
       <div class="flex items-center justify-between mb-3">
@@ -322,7 +450,7 @@
   </div>
 
   <!-- Summary Bar -->
-  <div class="card p-4 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" id="summary-bar">
+  <div class="card p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" id="summary-bar" style="border-color: var(--border-hover);">
     <div>
       <div class="flex items-center gap-2 mb-1">
         <span class="font-semibold" style="font-family: var(--font-display);" id="s-title">—</span>
