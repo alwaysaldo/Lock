@@ -949,6 +949,31 @@ function declareWinner(side) {
   document.getElementById('s-badge').style.background = 'rgba(16,185,129,0.1)';
   document.getElementById('s-badge').style.color = 'var(--success)';
 
+  // Build "who owes who" payment list
+  // Each loser owes their share to each winner proportionally
+  const payments = [];
+  const totalWinPool = winnerResults.reduce((s, w) => s + w.profit, 0);
+
+  if (mode === 'matchup') {
+    // Matchup: each pair is direct
+    winnerResults.forEach((w, i) => {
+      const l = loserResults[i];
+      if (l && w.profit > 0) {
+        payments.push({ from: l.name, to: w.name, amount: w.profit });
+      }
+    });
+  } else {
+    // Team/Individual: each loser pays each winner proportionally
+    loserResults.forEach(l => {
+      winnerResults.forEach(w => {
+        const share = totalWinPool > 0 ? (w.profit / totalWinPool) * l.loss : 0;
+        if (share > 0.001) {
+          payments.push({ from: l.name, to: w.name, amount: share });
+        }
+      });
+    });
+  }
+
   // Show result
   const area = document.getElementById('result-area');
   area.innerHTML = `<div class="card p-5 fade-in">
@@ -957,36 +982,37 @@ function declareWinner(side) {
       <h3 class="font-semibold text-xl" style="color:${winColor};font-family:var(--font-display);">${winName} Win!</h3>
       <p class="text-sm mt-1" style="color:var(--text2);">Settle up via <strong>${via}</strong></p>
     </div>
-    ${mode === 'matchup' ? `
-    <div class="space-y-2">
-      <div class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--text3);font-family:var(--font-display);">Matchup Results</div>
-      ${winnerResults.map((w, i) => {
-        const l = loserResults[i];
-        return `<div class="flex items-center gap-2 p-3 rounded-lg" style="background:var(--bg2);border:1px solid var(--border);">
-          <div class="flex items-center gap-2 flex-1">
-            <div class="avatar" style="background:${getColor(w.name)};color:#000;width:26px;height:26px;font-size:10px;">${w.name[0].toUpperCase()}</div>
-            <span class="text-sm font-medium" style="color:var(--success);">${w.name}</span>
-            <span class="text-xs font-mono font-semibold" style="color:var(--success);">+${sym}${w.profit.toFixed(dec)}</span>
-          </div>
-          <span class="text-xs" style="color:var(--text3);">vs</span>
-          <div class="flex items-center gap-2 flex-1 justify-end">
-            <span class="text-xs font-mono font-semibold" style="color:var(--danger);">-${sym}${(l?.loss||0).toFixed(dec)}</span>
-            <span class="text-sm font-medium" style="color:var(--danger);">${l?.name||'—'}</span>
-            <div class="avatar" style="background:${l?getColor(l.name):'var(--text3)'};color:#000;width:26px;height:26px;font-size:10px;">${l?l.name[0].toUpperCase():'?'}</div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>` : `
-    <div class="grid sm:grid-cols-2 gap-4">
+
+    <!-- Summary -->
+    <div class="grid sm:grid-cols-2 gap-4 mb-5">
       <div class="p-4 rounded-xl" style="background:var(--bg2);border:1px solid var(--border);">
-        <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text3);font-family:var(--font-display);">Winners — Collect</div>
+        <div class="label" style="margin-bottom:8px;">Winners</div>
         ${winnerResults.map(w => `<div class="flex items-center gap-2 py-1.5"><div class="avatar" style="background:${getColor(w.name)};color:#000;width:24px;height:24px;font-size:10px;">${w.name[0].toUpperCase()}</div><span class="text-sm">${w.name}</span><span class="ml-auto text-xs font-mono font-semibold" style="color:var(--success);">+${sym}${w.profit.toFixed(dec)}</span></div>`).join('')}
       </div>
       <div class="p-4 rounded-xl" style="background:var(--bg2);border:1px solid var(--border);">
-        <div class="text-xs font-semibold uppercase tracking-wider mb-3" style="color:var(--text3);font-family:var(--font-display);">Losers — Owe</div>
+        <div class="label" style="margin-bottom:8px;">Losers</div>
         ${loserResults.map(l => `<div class="flex items-center gap-2 py-1.5"><div class="avatar" style="background:${getColor(l.name)};color:#000;width:24px;height:24px;font-size:10px;">${l.name[0].toUpperCase()}</div><span class="text-sm">${l.name}</span><span class="ml-auto text-xs font-mono font-semibold" style="color:var(--danger);">-${sym}${l.loss.toFixed(dec)}</span></div>`).join('')}
       </div>
-    </div>`}
+    </div>
+
+    <!-- Who Owes Who -->
+    <div class="p-4 rounded-xl" style="background:var(--bg2);border:1px solid var(--border);">
+      <div class="label" style="margin-bottom:10px;">💸 Who Owes Who</div>
+      <div class="space-y-2">
+        ${payments.map(p => `<div class="flex items-center gap-3 p-3 rounded-lg" style="background:var(--bg-card);border:1px solid var(--border);">
+          <div class="avatar" style="background:${getColor(p.from)};color:#000;width:28px;height:28px;font-size:11px;">${p.from[0].toUpperCase()}</div>
+          <span class="text-sm font-medium" style="color:var(--danger);">${p.from}</span>
+          <div class="flex-1 flex items-center justify-center gap-2">
+            <div style="flex:1;height:1px;background:var(--border);"></div>
+            <span class="text-xs font-mono font-bold px-2 py-1 rounded-md" style="background:var(--accent-glow);color:var(--accent);white-space:nowrap;">${sym}${p.amount.toFixed(dec)}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--accent);flex-shrink:0;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            <div style="flex:1;height:1px;background:var(--border);"></div>
+          </div>
+          <span class="text-sm font-medium" style="color:var(--success);">${p.to}</span>
+          <div class="avatar" style="background:${getColor(p.to)};color:#000;width:28px;height:28px;font-size:11px;">${p.to[0].toUpperCase()}</div>
+        </div>`).join('')}
+      </div>
+    </div>
   </div>`;
 
   // Save to history
