@@ -872,8 +872,9 @@ function lockWager() {
   // Show vote buttons
   const area = document.getElementById('result-area');
   area.style.display = 'block';
-  area.innerHTML = `<div class="grid md:grid-cols-2 gap-4 fade-in">
+  area.innerHTML = `<div class="grid grid-cols-3 gap-4 fade-in">
     <button onclick="declareWinner('ct')" class="card p-5 text-center cursor-pointer" style="transition:all 0.2s;"><div class="font-semibold text-lg mb-1" style="color:var(--ct);font-family:var(--font-display);">CT Wins</div><p class="text-xs" style="color:var(--text3);">Counter-Terrorists take it</p></button>
+    <button onclick="declareTie()" class="card p-5 text-center cursor-pointer" style="transition:all 0.2s;"><div class="font-semibold text-lg mb-1" style="color:var(--text2);font-family:var(--font-display);">Tie</div><p class="text-xs" style="color:var(--text3);">No one pays</p></button>
     <button onclick="declareWinner('t')" class="card p-5 text-center cursor-pointer" style="transition:all 0.2s;"><div class="font-semibold text-lg mb-1" style="color:var(--t);font-family:var(--font-display);">T Wins</div><p class="text-xs" style="color:var(--text3);">Terrorists take it</p></button>
   </div>`;
   area.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1015,6 +1016,46 @@ function declareWinner(side) {
     initStats(l.name);
     playerStats[l.name].losses++;
     playerStats[l.name][curKey] -= l.loss;
+  });
+  localStorage.setItem('lock-stats', JSON.stringify(playerStats));
+}
+
+function declareTie() {
+  const title = document.getElementById('w-title').value.trim() || 'Untitled';
+  const currency = document.getElementById('w-currency').value;
+  const sym = getCurrencySymbol();
+
+  document.getElementById('s-badge').textContent = 'Tie';
+  document.getElementById('s-badge').style.background = 'rgba(126,138,154,0.15)';
+  document.getElementById('s-badge').style.color = 'var(--text2)';
+
+  const allPlayers = [...document.querySelectorAll('#team-ct .drag-player, #team-t .drag-player')].map(el => el.dataset.name);
+
+  const area = document.getElementById('result-area');
+  area.innerHTML = `<div class="card p-5 fade-in">
+    <div class="text-center">
+      <div class="text-3xl mb-2">🤝</div>
+      <h3 class="font-semibold text-xl mb-1" style="color:var(--text2);font-family:var(--font-display);">It's a Tie</h3>
+      <p class="text-sm" style="color:var(--text3);">No one owes anything. Run it back?</p>
+    </div>
+  </div>`;
+
+  // Save to history
+  matchHistory.unshift({
+    title, date: new Date().toLocaleDateString(), side: 'Tie',
+    winners: [], losers: [], via: currency === 'sol' ? 'SOL' : 'Cash', odds: document.getElementById('w-odds').value,
+    sym, dec: currency === 'sol' ? 2 : 0,
+  });
+  localStorage.setItem('lock-history', JSON.stringify(matchHistory));
+
+  // Ties count as neither win nor loss — just record participation
+  allPlayers.forEach(n => {
+    if(!playerStats[n]) playerStats[n] = { wins:0, losses:0, cash:0, sol:0 };
+    if(playerStats[n].earnings !== undefined) {
+      playerStats[n].cash = playerStats[n].earnings || 0;
+      playerStats[n].sol = 0;
+      delete playerStats[n].earnings;
+    }
   });
   localStorage.setItem('lock-stats', JSON.stringify(playerStats));
 }
