@@ -898,47 +898,52 @@ function updateAll() {
 }
 
 function updateSummary() {
-  const title = document.getElementById('w-title').value.trim() || '—';
-  const amount = parseFloat(document.getElementById('w-amount').value) || 0;
-  const currency = document.getElementById('w-currency').value;
-  const sym = getCurrencySymbol();
-  const odds = document.getElementById('w-odds').value;
-  const mode = document.getElementById('w-mode').value;
-  const ctN = document.getElementById('team-ct').querySelectorAll('.drag-player').length;
-  const tN = document.getElementById('team-t').querySelectorAll('.drag-player').length;
+  try {
+    const title = document.getElementById('w-title').value.trim() || '—';
+    const amount = parseFloat(document.getElementById('w-amount').value) || 0;
+    const currency = document.getElementById('w-currency').value;
+    const sym = currency === 'sol' ? '◎' : '$';
+    const odds = document.getElementById('w-odds').value;
+    const mode = document.getElementById('w-mode').value;
+    const ctN = document.getElementById('team-ct').querySelectorAll('.drag-player').length;
+    const tN = document.getElementById('team-t').querySelectorAll('.drag-player').length;
 
-  // Update currency symbol
-  const iconEl = document.getElementById('currency-icon');
-  if (iconEl && !document.getElementById('w-currency').value.includes('sol')) iconEl.textContent = sym;
+    // Update currency icon next to amount input
+    const iconEl = document.getElementById('currency-icon');
+    if (iconEl) iconEl.innerHTML = currency === 'sol' ? SOL_LOGO_SVG : '$';
 
-  let total;
-  if (mode === 'individual') {
-    total = 0;
-    document.querySelectorAll('#team-ct .drag-player, #team-t .drag-player').forEach(el => {
-      const inp = el.querySelector('.indiv-amount input');
-      total += parseFloat(inp?.value || amount) || 0;
-    });
-  } else if (mode === 'matchup') {
-    total = 0;
-    document.querySelectorAll('.matchup-amount').forEach(inp => {
-      total += (parseFloat(inp.value) || 0) * 2;
-    });
-  } else {
-    total = (ctN + tN) * amount;
+    let total = 0;
+    if (mode === 'individual') {
+      document.querySelectorAll('#team-ct .drag-player, #team-t .drag-player').forEach(el => {
+        const inp = el.querySelector('.indiv-amount input');
+        total += parseFloat(inp?.value || amount) || 0;
+      });
+    } else if (mode === 'matchup') {
+      document.querySelectorAll('.matchup-amount').forEach(inp => {
+        total += (parseFloat(inp.value) || 0) * 2;
+      });
+    } else {
+      total = (ctN + tN) * amount;
+    }
+
+    document.getElementById('s-title').textContent = title;
+    document.getElementById('s-pot').textContent = sym + total.toFixed(currency === 'sol' ? 2 : 0);
+    document.getElementById('s-players').textContent = ctN + tN;
+    document.getElementById('s-odds').textContent = odds;
+    document.getElementById('s-mode').textContent = mode === 'team' ? 'Team Pot' : mode === 'matchup' ? 'Matchups' : 'Individual';
+    document.getElementById('s-pay').textContent = currency === 'sol' ? 'SOL' : 'Cash';
+
+    // Enable/disable lock button
+    const btn = document.getElementById('lock-btn');
+    let canLock = ctN > 0 && tN > 0 && !wagerLocked;
+    if (mode === 'team') canLock = canLock && amount > 0;
+    if (mode === 'matchup') canLock = canLock && document.querySelectorAll('.lock-row').length > 0;
+    // Individual mode: just need players on both sides
+    btn.disabled = !canLock;
+    btn.style.opacity = canLock ? '1' : '0.35';
+  } catch(e) {
+    console.error('updateSummary error:', e);
   }
-
-  document.getElementById('s-title').textContent = title;
-  document.getElementById('s-pot').textContent = sym + total.toFixed(currency === 'sol' ? 2 : 0);
-  document.getElementById('s-players').textContent = ctN + tN;
-  document.getElementById('s-odds').textContent = odds;
-  document.getElementById('s-mode').textContent = mode === 'team' ? 'Team Pot' : mode === 'matchup' ? 'Matchups' : 'Individual';
-  document.getElementById('s-pay').textContent = currency === 'sol' ? 'SOL' : 'Cash';
-
-  const btn = document.getElementById('lock-btn');
-  let canLock = ctN > 0 && tN > 0 && !wagerLocked;
-  if (mode === 'team') canLock = canLock && amount > 0;
-  if (mode === 'matchup') canLock = canLock && document.querySelectorAll('.lock-row').length > 0;
-  btn.disabled = !canLock;
 }
 
 // ══════════ LOCK / SETTLE ══════════
